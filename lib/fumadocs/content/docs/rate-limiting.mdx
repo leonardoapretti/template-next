@@ -1,0 +1,42 @@
+---
+title: Rate limiting
+description: Limitação de tentativas em login, cadastro e troca de credenciais.
+docId: rate-limiting
+icon: Gauge
+---
+
+Os fluxos sensíveis a força bruta e abuso (login, cadastro, reenvio de e-mail de confirmação, troca de senha/e-mail) são protegidos por um limite simples de tentativas em `lib/utils/rate-limit.ts`.
+
+## Como funciona
+
+`verificarRateLimit(chave, limite, janelaMs)` mantém uma contagem em memória por chave, dentro de uma janela de tempo deslizante:
+
+```ts
+import { verificarRateLimit } from "@/lib/utils/rate-limit";
+
+const resultado = verificarRateLimit(`login:${ip}:${email}`, 5, 15 * 60 * 1000);
+
+if (!resultado.permitido) {
+  // bloquear a ação
+}
+```
+
+Cada chamada conta como uma tentativa, mesmo quando `permitido` é `false` — o chamador decide o que fazer com o resultado (bloquear a ação, mas sempre contar).
+
+## Onde já está aplicado
+
+| Fluxo | Chave | Limite |
+| --- | --- | --- |
+| Login (`auth/index.ts`) | IP + e-mail tentado | 5 tentativas / 15 min |
+| Cadastro (`app/(auth)/cadastro/`) | IP | 5 cadastros / hora |
+| Reenvio de confirmação de e-mail (`app/(auth)/login/verificar-email/`) | IP + e-mail | 3 reenvios / 15 min |
+| Solicitar troca de senha (`app/dashboard/conta/`) | ID do usuário | 5 solicitações / 15 min |
+| Solicitar troca de e-mail (`app/dashboard/conta/`) | ID do usuário | 5 solicitações / 15 min |
+
+## Limitação: em memória, por processo
+
+O contador vive em memória do processo Node, sem dependência externa (ex: Redis) — proposital, para manter o template enxuto. Isso é suficiente para uma única instância da aplicação, mas tem uma limitação importante:
+
+**Em deploy com múltiplas instâncias** (vários containers, funções serverless), cada instância mantém sua própria contagem. Um atacante distribuído entre requisições que caem em instâncias diferentes efetivamente multiplica o limite pelo número de instâncias.
+
+Se o seu deploy escalar horizontalmente e isso passar a importar, substitua `lib/utils/rate-limit.ts` por um contador compartilhado (ex: Redis com `INCR` + `EXPIRE`, ou um serviço gerenciado como o Upstash Ratelimit) — a assinatura de `verificarRateLimit` foi pensada para ser trocada sem alterar os pontos de chamada.

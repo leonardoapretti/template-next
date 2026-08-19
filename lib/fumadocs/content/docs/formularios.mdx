@@ -1,0 +1,95 @@
+---
+title: Formulários
+description: Padrão de formulário do template — form/schema/actions.
+docId: formularios
+icon: FileText
+---
+
+Todo formulário do template segue o mesmo padrão de três arquivos numa pasta dedicada:
+
+```
+minha-feature/
+  page.tsx
+  schema.ts       # validação com zod
+  actions.ts       # server action ("use server")
+  minha-feature-form.tsx  # componente client, react-hook-form + zodResolver
+```
+
+## `schema.ts`
+
+Define a validação com [zod](https://zod.dev), reutilizada tanto no client (via `zodResolver`) quanto no server (dentro da action):
+
+```ts
+import z from "zod";
+
+export const meuSchema = z.object({
+  nome: z.string().trim().min(3, "Informe um nome."),
+  email: z.email("Informe um e-mail válido."),
+});
+
+export type MeuFormSchema = z.infer<typeof meuSchema>;
+```
+
+## `actions.ts`
+
+Server action que revalida o input com o mesmo schema (nunca confie apenas na validação client-side) e retorna um `DataBaseResponse` serializado:
+
+```ts
+"use server";
+
+import { DataBaseResponse } from "@/lib/services/config/database-response";
+import { meuSchema } from "./schema";
+
+export async function minhaAction(input: unknown) {
+  const parsed = meuSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return DataBaseResponse.error({
+      code: "VALIDATION_ERROR",
+      message: "Dados inválidos.",
+    }).serialize();
+  }
+
+  // ...lógica de negócio
+
+  return DataBaseResponse.success({ ok: true }).serialize();
+}
+```
+
+## Formulário (client component)
+
+```tsx
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { minhaAction } from "./actions";
+import { type MeuFormSchema, meuSchema } from "./schema";
+
+export function MeuForm() {
+  const form = useForm<MeuFormSchema>({
+    resolver: zodResolver(meuSchema),
+    defaultValues: { nome: "", email: "" },
+  });
+
+  async function onSubmit(data: MeuFormSchema) {
+    const result = await minhaAction(data);
+
+    if (!result.success) {
+      toast.error(result.errorMessage ?? "Não foi possível concluir.");
+      return;
+    }
+
+    // sucesso
+  }
+
+  return <form onSubmit={form.handleSubmit(onSubmit)}>{/* campos */}</form>;
+}
+```
+
+## Exemplos de referência
+
+- `app/(auth)/cadastro/_components/` — cadastro de usuário.
+- `app/(auth)/login/_components/` — login.
+- `app/fale-conosco/` — formulário de contato que envia e-mail via Resend.

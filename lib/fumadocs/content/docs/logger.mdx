@@ -1,0 +1,33 @@
+---
+title: Logger
+description: Logs estruturados com Pino.
+docId: logger
+icon: Terminal
+---
+
+O logger (`lib/logger/src/index.ts`) usa [Pino](https://getpino.io) para produzir logs estruturados em JSON, com campos padronizados e redaction automática de dados sensíveis.
+
+## Uso
+
+```ts
+import logger from "@/lib/logger/src";
+
+logger.info("Mensagem informativa");
+logger.error(error, "Falha ao processar algo");
+```
+
+## Campos automáticos
+
+Cada log inclui `logId`, `level`, `levelValue`, `app`, `environment`, `hostname` e (quando presentes) `namespace`/`podName`/`nodeName` — úteis para correlacionar logs em ambientes com múltiplas réplicas/pods.
+
+## Redaction
+
+Campos sensíveis são automaticamente substituídos por `[REDACTED]` antes de serem logados: `password`, `token`, `secret`, `creditCard`, `cpf`, `ssn`, e os headers `authorization`/`cookie`. Para redigir um novo campo, adicione o path em `redact.paths` (`lib/logger/src/index.ts`).
+
+## Ambiente Edge
+
+Em runtime Edge (sem `process.versions.node`), o logger roda em nível `silent` automaticamente, para não quebrar em ambientes onde a API do Node não está disponível.
+
+## Auditoria vs. logger
+
+O logger é para debug e diagnóstico operacional — efêmero, sem garantias de integridade. Para trilha de eventos de negócio/compliance, use o [sistema de auditoria](/docs/auditoria) (`AuditLog`), não o logger.

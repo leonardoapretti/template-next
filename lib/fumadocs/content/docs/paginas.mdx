@@ -1,0 +1,113 @@
+---
+title: Padrão de páginas
+description: PageShell e PaginaDetalhes — os dois padrões de layout de página do template.
+docId: paginas
+icon: LayoutTemplate
+---
+
+O template define dois padrões de composição para páginas internas (autenticadas ou administrativas), em `components/pages/`. O objetivo é que toda página nova siga a mesma estrutura visual — espaçamento, cantos arredondados, cabeçalho com faixa de destaque, responsividade — sem reescrever esse CSS a cada tela.
+
+## `PageShell` — página padrão
+
+Use para qualquer página de listagem, formulário ou painel simples. Composição:
+
+```tsx
+import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shell";
+import { LayoutDashboardIcon } from "lucide-react";
+
+export default function ExemploPage() {
+  return (
+    <PageShell>
+      <PageHeader
+        icon={<LayoutDashboardIcon className="size-5" />}
+        title="Título da página"
+        description="Descrição curta do que esta página faz."
+      />
+
+      <PageSection title="Uma seção">
+        {/* conteúdo da seção */}
+      </PageSection>
+    </PageShell>
+  );
+}
+```
+
+Componentes disponíveis:
+
+| Componente | Função |
+| --- | --- |
+| `PageShell` | Container raiz — fundo com gradiente sutil e padding responsivo. |
+| `PageHeader` | Cabeçalho com ícone, título, descrição e uma área de ação (ex: botão) opcional. |
+| `PageSection` | Bloco de conteúdo com título/descrição/ícone opcionais e uma borda separando do corpo. |
+| `PageGrid` | Grid responsivo (`columns={2\|3\|4}`) para cards. |
+| `PageColumns` / `PageMain` / `PageAside` | Layout de duas colunas (conteúdo principal + barra lateral fixa). |
+| `StatCard` | Card de métrica (label, valor, ícone, link opcional). |
+| `PageCardLink` | Card clicável simples, para navegação entre páginas relacionadas. |
+| `EmptyState` | Estado vazio padronizado (sem dados, sem resultados). |
+
+Exemplo real: `/dashboard` e `/admin` usam `PageShell` — o segundo também usa `PageGrid`/`StatCard`/`PageCardLink`.
+
+## `PaginaDetalhes` — página de detalhes de um recurso
+
+Use quando a página exibe um recurso específico (um registro, uma entidade) com cabeçalho rico (identidade + métricas) e conteúdo dividido em corpo principal + barra lateral. Em telas pequenas, a barra lateral vira um accordion colapsável automaticamente — não é necessário tratar responsividade manualmente.
+
+```tsx
+import {
+  DetalhesHeader,
+  DetalhesHeaderConteudo,
+  DetalhesHeaderIcone,
+  DetalhesHeaderIdentidade,
+  DetalhesHeaderTitulo,
+  PaginaDetalhes,
+} from "@/components/pages/detalhes";
+import { PackageIcon } from "lucide-react";
+
+export default function ExemploDetalhesPage() {
+  return (
+    <PaginaDetalhes>
+      <DetalhesHeader>
+        <DetalhesHeaderIdentidade>
+          <DetalhesHeaderIcone>
+            <PackageIcon className="size-5" />
+          </DetalhesHeaderIcone>
+          <DetalhesHeaderConteudo>
+            <DetalhesHeaderTitulo>Nome do recurso</DetalhesHeaderTitulo>
+          </DetalhesHeaderConteudo>
+        </DetalhesHeaderIdentidade>
+      </DetalhesHeader>
+
+      <PaginaDetalhes.Body>
+        <PaginaDetalhes.Main>
+          <PaginaDetalhes.Section title="Sobre">
+            {/* conteúdo principal */}
+          </PaginaDetalhes.Section>
+        </PaginaDetalhes.Main>
+
+        <PaginaDetalhes.Sidebar>
+          <PaginaDetalhes.Section title="Informações">
+            {/* conteúdo da barra lateral */}
+          </PaginaDetalhes.Section>
+        </PaginaDetalhes.Sidebar>
+      </PaginaDetalhes.Body>
+    </PaginaDetalhes>
+  );
+}
+```
+
+Componentes principais:
+
+| Componente | Função |
+| --- | --- |
+| `PaginaDetalhes` | Container raiz. |
+| `DetalhesHeader` (+ `Identidade`, `Icone`, `Conteudo`, `Titulo`, `Subtitulo`, `Stats`, `StatsCelula`) | Cabeçalho com ícone, título, badges e uma faixa de métricas em colunas. |
+| `PaginaDetalhes.Body` / `.Main` / `.Sidebar` | Layout de duas colunas — a sidebar colapsa em accordion no mobile automaticamente. |
+| `PaginaDetalhes.Section` | Bloco de conteúdo com título e ícone. |
+| `PaginaDetalhes.Field` | Par label/valor — não renderiza nada se o valor for vazio. |
+| `PaginaDetalhes.InfoCard` | Card com badge, título e descrição, para destacar uma informação dentro de uma seção. |
+| `PaginaDetalhes.ListGroup` | Lista de itens relacionados, com título — não renderiza nada se a lista estiver vazia. |
+
+### Exemplo completo
+
+`app/dashboard/produtos/[id]/page.tsx` é a referência funcional deste padrão: um recurso "produto" mockado (sem banco de dados), demonstrando cabeçalho com stats, seção principal, seção de atributos e uma sidebar com card de categoria. Acesse `/dashboard/produtos/exemplo` para ver renderizado.
+
+Ao conectar a um recurso real, troque o objeto mockado por uma chamada a um service que retorne `DataBaseResponse` (ver [Banco de dados](/docs/banco-de-dados)), e use `notFound()` quando o recurso não existir.

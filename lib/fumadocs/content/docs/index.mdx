@@ -1,0 +1,33 @@
+---
+title: Visão geral
+description: Documentação dos serviços de infraestrutura já configurados neste template.
+docId: index
+icon: BookOpen
+---
+
+Este template Next.js já vem com um conjunto de serviços de infraestrutura prontos para produção. Esta área documenta cada um deles.
+
+## Serviços disponíveis
+
+- [Autenticação](/docs/autenticacao) — login com Auth.js (NextAuth), sessão JWT.
+- [Rate limiting](/docs/rate-limiting) — limitação de tentativas em login, cadastro e troca de credenciais.
+- [Controle de acesso](/docs/controle-de-acesso) — motor de RBAC em `lib/access-control`.
+- [Criptografia](/docs/criptografia) — criptografia/descriptografia de campos sensíveis.
+- [E-mail](/docs/email) — envio de e-mail transacional via Resend.
+- [Logger](/docs/logger) — logs estruturados com Pino.
+- [Banco de dados](/docs/banco-de-dados) — Prisma e validação de responses.
+- [Formulários](/docs/formularios) — padrão de formulário (form/schema/actions).
+- [Páginas](/docs/paginas) — padrão de layout de página (`PageShell` e `PaginaDetalhes`).
+- [Testes](/docs/testes) — suíte mínima com Vitest.
+
+## Páginas de exemplo
+
+- `/` — rota pública.
+- `/dashboard` — rota protegida por autenticação.
+- `/admin` — rota protegida por RBAC (exige `isAdmin`).
+- `/dashboard/produtos/exemplo` — página de detalhes de um recurso mockado, exemplo do padrão `PaginaDetalhes`.
+- `/cadastro` e `/login` — cadastro e autenticação.
+- `/fale-conosco` — formulário público que envia e-mail via Resend.
+- `/admin/emails` — formulário protegido de envio de e-mail via Resend.
+- `/docs` — esta documentação, pública.
+- `/admin/docs` — mesmo conteúdo, servido dentro da área administrativa protegida.

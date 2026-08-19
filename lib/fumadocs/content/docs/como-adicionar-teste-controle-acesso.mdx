@@ -1,0 +1,101 @@
+---
+title: Como adicionar teste de acesso
+description: Guia prático para escolher a camada correta e criar testes de permissão.
+docId: como-adicionar-teste-controle-acesso
+icon: FlaskConical
+---
+
+Use esta página quando uma nova action, policy ou guard entrar no sistema.
+
+O teste deve provar que acesso não autorizado falha antes de qualquer mutação.
+
+## Regra principal
+
+Todo teste de controle de acesso deve responder pelo menos uma pergunta:
+
+- este usuário tem o papel exigido?
+- a action bloqueia antes de chamar o service?
+
+Se o teste não responde nenhuma dessas perguntas, provavelmente pertence a outro tipo de suíte.
+
+## Escolha da camada
+
+| Caso | Arquivo de referência |
+| --- | --- |
+| Regra pura de papel | `tests/access-control/policy.test.ts` |
+| Server action mutável ou sensível | `tests/actions/*.test.ts` |
+
+Prefira adicionar no arquivo já existente. Crie um arquivo novo somente quando a frente ainda não existir.
+
+## Fixtures
+
+Use as fixtures de `tests/helpers/access-context-fixtures.ts` como ponto de partida, e crie uma fixture nova apenas quando ela representar um papel ou cenário reutilizável entre testes.
+
+## Receita: policy
+
+Use quando a decisão depende apenas de `AccessContext`.
+
+Cubra:
+
+- papel permitido;
+- papel ausente;
+- admin quando for uma regra administrativa.
+
+O teste deve ser direto e sem mocks de banco.
+
+## Receita: action
+
+Para server actions, valide sempre a ordem de proteção:
+
+1. contexto e papel corretos;
+2. service chamado somente depois dos guards.
+
+Todo caso negativo deve confirmar que o service não foi chamado.
+
+```ts
+await expect(action(inputNaoAutorizado)).rejects.toThrow(erro);
+expect(serviceMock.executar).not.toHaveBeenCalled();
+```
+
+Para o caminho autorizado, valide que a action chamou o guard correto antes de prosseguir.
+
+## Nomes
+
+Use descrições objetivas:
+
+- `nega acesso a usuário sem papel admin`;
+- `bloqueia action admin para usuário comum`.
+
+Prefira nomes que descrevem o risco, não a implementação interna.
+
+## Anti-padrões
+
+Evite:
+
+- testar apenas o caminho feliz de uma action protegida;
+- mockar o guard e depois não verificar se ele foi chamado;
+- usar erro detalhado que indique detalhe interno de outro usuário/recurso;
+- criar fixture global para um cenário usado uma única vez.
+
+## Validação local
+
+Depois de adicionar o teste, rode:
+
+```bash
+pnpm test
+```
+
+Quando a alteração tocar tipos ou contratos compartilhados, rode também:
+
+```bash
+pnpm exec tsc --noEmit
+```
+
+O lint geral pode falhar por arquivos fora da alteração. Nesse caso, registre a falha como preexistente e valide o arquivo alterado diretamente.
+
+## Checklist final
+
+- O teste cobre uma negação real de acesso.
+- O mock prova que a mutação/service não executa quando o guard falha.
+- Erros de acesso negado não revelam detalhe interno de outro usuário.
+- `pnpm test` passa localmente.

@@ -1,0 +1,36 @@
+---
+title: Criptografia
+description: Criptografia e descriptografia de campos sensíveis em repouso (AES-256-GCM).
+docId: criptografia
+icon: Lock
+---
+
+Campos sensíveis (PII) são cifrados em repouso com AES-256-GCM, transparente para os services, via uma Prisma Client Extension. Toda a lógica está em `lib/services/crypto/`.
+
+## Motor (`encryption-engine.ts`)
+
+- `encrypt(texto)`: cifra e retorna `"v1:<base64(iv || authTag || ciphertext)>"`. Cada valor recebe um IV aleatório de 12 bytes — o mesmo texto claro nunca produz o mesmo cifrado duas vezes.
+- `decrypt(valorCifrado)`: decifra, lançando se o `authTag` não bater (indica adulteração).
+- `hashForLookup(texto)`: HMAC-SHA256 determinístico, usado para permitir busca exata (`WHERE`) sobre um campo cifrado.
+
+A chave vem de `ENCRYPTION_KEY` (32 bytes em base64, gerar com `openssl rand -base64 32`).
+
+## Extensão (`encryption-extension.ts`)
+
+A extensão intercepta toda query do Prisma e:
+
+1. Em `create`/`update`/`upsert` nos models listados em `MODELS_COM_PII_CIFRADA` (hoje só `User`), cifra os campos configurados em `CAMPOS_COM_HASH` e preenche o `<campo>Hash` correspondente.
+2. Reescreve `where: { email: "..." }` para `where: { emailHash: hash(...) }`, já que o valor cifrado não bate por igualdade direta.
+3. Decifra recursivamente qualquer campo cifrado no resultado, inclusive em relations aninhadas via `include`/`select`.
+
+## Adicionando um novo campo cifrado
+
+Em `encryption-extension.ts`:
+
+1. Adicione o model a `MODELS_COM_PII_CIFRADA`, se ainda não estiver.
+2. Se o campo precisa de busca exata (`WHERE`), adicione em `CAMPOS_COM_HASH` com o nome do campo `<campo>Hash` correspondente no schema Prisma (coluna `String @unique`, ou indexada conforme o caso).
+3. Ajuste `SemCamposHash` (`lib/services/crypto/tipos.ts`) para continuar omitindo o novo `<campo>Hash` dos tipos de input do Prisma usados pelos services — quem preenche esse campo é sempre a extensão, nunca o chamador.
+
+## Uso
+
+Os services passam o valor em texto claro normalmente (`db.user.create({ data: { email: "..." } })`) — a extensão cuida de cifrar antes de persistir e decifrar ao ler. Nenhuma chamada manual a `encrypt`/`decrypt` é necessária no código de negócio.

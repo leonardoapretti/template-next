@@ -1,0 +1,58 @@
+---
+title: Banco de dados
+description: Prisma, validação de responses e o padrão de service.
+docId: banco-de-dados
+icon: Database
+---
+
+O acesso ao banco usa [Prisma](https://www.prisma.io) (`prisma/schema.prisma`), com client gerado em `generated/prisma/client` e instanciado em `lib/db.ts` — que também aplica as extensões de [criptografia](/docs/criptografia) e [auditoria](/docs/auditoria).
+
+## Validação de responses (`DataBaseResponse`)
+
+Toda operação de banco que pode falhar deve retornar um `DataBaseResponse` (`lib/services/config/database-response.ts`) em vez de deixar a exceção vazar até o client:
+
+```ts
+import { DataBaseResponse } from "@/lib/services/config/database-response";
+
+function buscarUsuario(id: string) {
+  return DataBaseResponse.fromPromise(() =>
+    db.user.findUniqueOrThrow({ where: { id } }),
+  );
+}
+```
+
+O chamador sempre verifica o resultado antes de usar os dados:
+
+```ts
+const response = await buscarUsuario(id);
+
+if (response.isError()) {
+  // response.getErrorCode() / response.getErrorMessage()
+}
+
+response.data; // só acessível após confirmar isSuccess()
+```
+
+Em uma server action, `serialize()` converte o `DataBaseResponse` num formato plano (`{ success, data, errorMessage, errorCode }`) seguro para retornar ao client:
+
+```ts
+return DataBaseResponse.success(usuario).serialize({ redirectTo: "/login" });
+```
+
+## `BaseService`
+
+`lib/services/config/base-service.ts` fornece uma classe base para services que espelham um model Prisma, com métodos padrão (`recuperarTodos`, `recuperarPorId`, `criar`, `atualizar`, `remover`, `upsert`):
+
+```ts
+class UserService extends BaseService<typeof db.user> {
+  constructor() {
+    super(db.user);
+  }
+}
+```
+
+`BaseService` aceita um `scope` opcional — uma função que recebe o `UsuarioAtualContexto` (ver [Controle de acesso](/docs/controle-de-acesso)) e retorna um filtro Prisma aplicado automaticamente a toda leitura/escrita por ID, útil para isolar dados por usuário/tenant.
+
+## Padrão de service
+
+Services ficam em `lib/services/*.service.ts`, cada um encapsulando o acesso a um model (ou conjunto de models relacionados) e retornando `DataBaseResponse`. Veja `lib/services/user.service.ts` como referência.

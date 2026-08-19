@@ -1,0 +1,102 @@
+datasource db {
+  provider = "mysql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/client"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum ActionTokenTipo {
+  VERIFICACAO_EMAIL
+  REDEFINICAO_SENHA
+  ALTERACAO_EMAIL
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  email           String
+  emailHash       String    @unique
+  emailVerificado DateTime?
+  senha           String
+  imagem          String?
+  isAdmin         Boolean   @default(false)
+  nome            String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actionTokens ActionToken[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// AUTH / INFRA
+// ─────────────────────────────────────────────
+
+model ActionToken {
+  id   String          @id @default(cuid())
+  tipo ActionTokenTipo
+
+  tokenHash String @unique
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  email String?
+
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tipo])
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("action_tokens")
+}
+
+// Trilha de auditoria append-only para operações críticas (login, cadastro,
+// manipulação de dados sensíveis, ações administrativas). Nenhum service deve
+// expor update/delete para este model. Cada registro referencia o hash do
+// registro anterior (hashAnterior), formando uma cadeia que torna qualquer
+// alteração retroativa de uma linha detectável.
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  usuarioId    String?
+  usuarioEmail String?
+  usuarioNome  String?
+
+  acao       String
+  entidade   String?
+  entidadeId String?
+
+  dadosAntes  Json?
+  dadosDepois Json?
+
+  ip        String?
+  userAgent String? @db.Text
+
+  hash         String
+  hashAnterior String?
+
+  @@index([usuarioId])
+  @@index([entidade, entidadeId])
+  @@index([acao])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

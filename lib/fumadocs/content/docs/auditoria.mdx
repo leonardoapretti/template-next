@@ -1,0 +1,51 @@
+---
+title: Auditoria
+description: Trilha de auditoria resistente a adulteração para operações críticas.
+docId: auditoria
+icon: ShieldAlert
+---
+
+A trilha de auditoria (`AuditLog`) registra, de forma resistente a adulteração retroativa, quem fez o quê em operações críticas — login, cadastro e escrita nos models sensíveis.
+
+Toda a lógica está em `lib/services/audit-log.service.ts`, `lib/services/audit-log-extension.ts` e `lib/services/audit-log-context.ts`. O modelo de dados está em `prisma/schema.prisma` (model `AuditLog`).
+
+## Cadeia de hash
+
+Cada registro carrega `hash` (SHA-256 de um payload canônico do evento) encadeado ao `hashAnterior` (o `hash` do registro anterior). Alterar qualquer campo de qualquer linha antiga quebra a cadeia a partir daquele ponto — detectável via `auditLogService.verificarCadeia(client)`.
+
+Não é tamper-*proof*, é tamper-*evident*: qualquer credencial com acesso de escrita ao banco consegue alterar `audit_logs` fisicamente. A cadeia de hash torna isso detectável, não impossível.
+
+## Captura automática
+
+Uma Prisma Client Extension (`lib/db.ts`) intercepta toda escrita (`create`/`update`/`delete`/`upsert`) nos models listados em `AUDITADOS` (`lib/services/audit-log-extension.ts`) — hoje só `User` — e chama `auditLogService.registrar(...)` automaticamente, sem exigir alteração nos services.
+
+Para auditar um novo model, adicione seu nome ao `Set` `AUDITADOS`.
+
+## Eventos explícitos
+
+Eventos que não correspondem a uma escrita de model são registrados via chamada direta a `auditLogService.registrar(...)`:
+
+| Ação | Onde |
+| --- | --- |
+| `LOGIN_SUCCESS` / `LOGIN_FAILED` | `auth/index.ts` (`authorize()`) |
+| `CADASTRO_REALIZADO` | `app/(auth)/cadastro/_components/actions.ts` |
+
+## Atomicidade com transações
+
+Quando uma operação de negócio roda dentro de `db.$transaction(async (tx) => ...)`, envolva o corpo com `auditTxContext.run(tx, ...)` (`lib/services/audit-log-context.ts`) para que o `AuditLog` seja gravado na mesma transação SQL:
+
+```ts
+return db.$transaction(async (tx) =>
+  auditTxContext.run(tx, async () => {
+    // ...lógica de negócio
+  }),
+);
+```
+
+## Auditoria vs. logging operacional
+
+`AuditLog` (banco, permanente, cadeia de integridade) e o [logger Pino](/docs/logger) (stdout, efêmero, sem garantias de integridade) têm propósitos diferentes e não devem ser confundidos. O logger nunca deve substituir a auditoria.
+
+## Falha ao gravar
+
+`auditLogService.registrar(...)` envolve a gravação em `try/catch`. Se falhar, o erro é logado via Pino e engolido — a operação de negócio que disparou o evento não é revertida por causa disso, priorizando disponibilidade sobre completude da trilha.

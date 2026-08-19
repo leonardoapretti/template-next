@@ -1,0 +1,28 @@
+---
+title: Testes
+description: Suíte mínima de testes com Vitest.
+docId: testes
+icon: FlaskConical
+---
+
+A suíte de testes usa [Vitest](https://vitest.dev), configurado em `vitest.config.mts`.
+
+## Rodando os testes
+
+```bash
+pnpm test
+```
+
+## Estrutura
+
+- `tests/access-control/` — testes do motor de RBAC (`policy.ts`), cobrindo papéis.
+- `tests/crypto/` — testes do motor de [criptografia](/docs/criptografia), cobrindo `encrypt`/`decrypt`/`hashForLookup` e a extensão do Prisma.
+- `tests/helpers/` — fixtures reutilizáveis entre suítes, como `access-context-fixtures.ts` (contextos de acesso prontos: admin, usuário comum).
+
+## Testando o controle de acesso
+
+Veja [Como adicionar teste de controle de acesso](/docs/como-adicionar-teste-controle-acesso) para o guia completo de como escolher a camada certa (policy pura vs. guard vs. action) ao adicionar uma nova regra de acesso.
+
+## Testando criptografia
+
+`tests/crypto/` cobre o roundtrip `encrypt`/`decrypt`, a detecção de adulteração via `authTag`, e o comportamento da extensão do Prisma (cifrar em `create`/`update`, reescrever `where` para busca por hash, decifrar resultados recursivamente).

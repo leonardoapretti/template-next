@@ -1,0 +1,84 @@
+---
+title: Controle de acesso
+description: Motor de RBAC do template, em lib/access-control.
+docId: controle-de-acesso
+icon: ShieldCheck
+---
+
+O controle de acesso fica concentrado em `lib/access-control`. Esse diretório reúne as peças que decidem se o usuário atual pode executar uma ação ou acessar um recurso — services de domínio continuam responsáveis pelas regras de negócio, mas validações de acesso reutilizáveis não devem ficar espalhadas em `lib/services`.
+
+## Estrutura
+
+- `context.ts`: monta o `AccessContext` do usuário atual (sessão).
+- `current-user.ts`: helpers para obter o usuário/contexto atual.
+- `policy.ts`: decisões puras — papel ativo.
+- `action-guards.ts`: guards usados por server actions.
+- `errors.ts`: erros padronizados de acesso.
+
+## AccessContext
+
+`AccessContext` é o objeto base para qualquer decisão de acesso. Contém `usuarioId` e `isAdmin`.
+
+```ts
+export type AccessContext = {
+  usuarioId: string;
+  isAdmin: boolean;
+};
+```
+
+Exemplo real: `app/(admin)/admin/layout.tsx` usa `getAccessContext()` e `canActAs(ctx, "ADMIN")` para decidir se o usuário pode entrar na área administrativa, redirecionando para `/dashboard` caso contrário.
+
+## Fluxo padrão de uma action protegida
+
+1. Validar o input com schema (zod).
+2. Montar `AccessContext` com `getAccessContext()`.
+3. Validar papel com os guards.
+4. Chamar o service.
+
+```ts
+"use server";
+
+import { assertAdminAction, getAccessContext } from "@/lib/access-control";
+import { DataBaseResponse } from "@/lib/services/config/database-response";
+import { z } from "zod";
+
+const schema = z.object({
+  id: z.string().min(1),
+});
+
+export async function exemploAction(input: unknown) {
+  const parsed = schema.safeParse(input);
+
+  if (!parsed.success) {
+    return DataBaseResponse.error({
+      code: "VALIDATION_ERROR",
+      message: "Dados inválidos.",
+    }).serialize();
+  }
+
+  const ctx = await getAccessContext();
+  await assertAdminAction(ctx);
+
+  // ...lógica protegida
+}
+```
+
+## Policies
+
+`policy.ts` contém decisões sem consultar o banco:
+
+- `canActAs(ctx, "ADMIN")`.
+
+Use policy quando a decisão depender apenas do `AccessContext` já carregado.
+
+## Erros
+
+Erros disponíveis em `errors.ts`: `AuthenticationRequiredError`, `AccessDeniedError`, `ProfileRequiredError`.
+
+## Estendendo o RBAC
+
+Para adicionar um novo papel, recurso ou regra de ownership:
+
+1. Se for decisão sem banco, adicione em `policy.ts`.
+2. Se precisar carregar um recurso com verificação de ownership, crie um guard próprio (siga o padrão de `assertAdminAction`).
+3. Se for composição comum de server action, adicione em `action-guards.ts`.

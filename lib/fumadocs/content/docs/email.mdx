@@ -1,0 +1,48 @@
+---
+title: E-mail
+description: Envio de e-mail transacional via Resend.
+docId: email
+icon: Mail
+---
+
+O envio de e-mail usa [Resend](https://resend.com), configurado em `lib/email/resend.ts` e exposto pelo `emailService` (`lib/services/email.service.ts`).
+
+## Configuração
+
+Variáveis de ambiente:
+
+- `RESEND_API_KEY` (obrigatória).
+- `RESEND_FROM_EMAIL` (opcional, default `Template <onboarding@resend.dev>`).
+- `EMAIL_DESTINATARIO_DEV` (opcional): em desenvolvimento, se definida, todos os e-mails são redirecionados para esse endereço, independente do destinatário real — útil para testar sem enviar e-mail para destinatários reais.
+
+## Enviando um e-mail
+
+```ts
+import { emailService, criarEmailHtml } from "@/lib/services/email.service";
+
+const response = await emailService.enviarEmail({
+  destinatario: "usuario@exemplo.com",
+  assunto: "Assunto do e-mail",
+  texto: "Versão em texto plano.",
+  html: criarEmailHtml({
+    titulo: "Título do e-mail",
+    paragrafos: ["Primeiro parágrafo.", "Segundo parágrafo."],
+    cta: { label: "Ação", url: "https://..." },
+  }),
+});
+
+if (response.isError()) {
+  // response.getErrorMessage()
+}
+```
+
+`criarEmailHtml` gera um template HTML consistente (cabeçalho, parágrafos, tabela de informações, call-to-action, rodapé), evitando montar HTML de e-mail à mão em cada fluxo.
+
+## Reply-to automático
+
+Por padrão, `enviarEmail` usa o e-mail do usuário autenticado como `replyTo` (via `getUsuarioAtualId`). Passe `usarEmailUsuarioComoReplyTo: false` para desativar, ou `replyTo` explícito para sobrescrever.
+
+## Exemplos reais
+
+- `app/fale-conosco/` — formulário público de 3 campos (nome, e-mail, mensagem) que envia a mensagem por e-mail via `emailService.enviarEmail`, com o e-mail do remetente como `replyTo`.
+- `app/(admin)/admin/emails/` — rota protegida por RBAC (`assertAdminAction`) com formulário de destinatário, assunto e corpo, útil para testar o envio manualmente e como referência de integração com o Resend.

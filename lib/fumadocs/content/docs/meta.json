@@ -1,0 +1,19 @@
+{
+  "title": "Documentação",
+  "description": "Documentação dos serviços de infraestrutura do template",
+  "icon": "BookOpen",
+  "pages": [
+    "index",
+    "autenticacao",
+    "rate-limiting",
+    "controle-de-acesso",
+    "criptografia",
+    "email",
+    "logger",
+    "banco-de-dados",
+    "formularios",
+    "paginas",
+    "testes",
+    "como-adicionar-teste-controle-acesso"
+  ]
+}

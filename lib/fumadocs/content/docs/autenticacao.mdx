@@ -1,0 +1,37 @@
+---
+title: Autenticação
+description: Login com Auth.js (NextAuth), sessão JWT e fluxo de cadastro/confirmação de e-mail.
+docId: autenticacao
+icon: KeyRound
+---
+
+A autenticação usa [Auth.js (NextAuth)](https://authjs.dev), configurado em `auth/index.ts`, com o provider `Credentials` (e-mail e senha).
+
+## Sessão
+
+A sessão usa estratégia `jwt` (sem depender de tabela de sessão no banco). O token carrega `id`, `nome`, `email` e `isAdmin`. Esses campos ficam tipados em `lib/types/next-auth.d.ts`, estendendo os tipos `User`, `Session` e `JWT` do NextAuth.
+
+## Login
+
+O provider `Credentials` (`auth/index.ts`) valida e-mail/senha com `bcryptjs`, exige e-mail verificado e registra o resultado (sucesso ou falha) em `AuditLog` via `auditLogService`.
+
+O fluxo de UI fica em `app/(auth)/login/`, seguindo o [padrão de formulário](/docs/formularios) do template.
+
+## Cadastro e confirmação de e-mail
+
+O cadastro (`app/(auth)/cadastro/`) cria o usuário via `userService.criarUsuario`/`criarUsuarioComConfirmacaoEmail`.
+
+Em produção, o usuário recebe um e-mail com link de confirmação (`userService.enviarEmailConfirmacaoConta`), usando um `ActionToken` de uso único (`lib/services/actiontoken.service.ts`). Em desenvolvimento (`NODE_ENV=development`), a conta já nasce com e-mail verificado, para agilizar o fluxo local.
+
+## Gestão da conta (`/dashboard/conta`)
+
+Usuários autenticados alteram senha e e-mail em `/dashboard/conta`. As duas ações usam `ActionToken` de uso único e exigem confirmação por link, seguindo o padrão de dois fatores (algo que você sabe — a senha atual — mais posse de um e-mail):
+
+- **Alterar senha**: é o mesmo fluxo de "esqueci minha senha". `userService.enviarEmailAlteracaoSenha` gera um `ActionToken` do tipo `REDEFINICAO_SENHA` e envia um link para o e-mail **atual** do usuário. O link leva a `/login/redefinir-senha/[token]`, onde a nova senha é definida (`alterarSenhaPorToken`); ao concluir, a sessão é encerrada (`signOut`) e o usuário é redirecionado para `/login`.
+- **Alterar e-mail**: o formulário pede a senha atual (`userService.verificarSenhaAtual`) e o novo e-mail. Se a senha bater, `userService.enviarEmailAlteracaoEmail` gera um `ActionToken` do tipo `ALTERACAO_EMAIL` — guardando o novo e-mail pretendido no próprio token — e envia o link de confirmação para o **novo** endereço, não para o atual. O e-mail só é trocado quando esse link é acessado (`/dashboard/conta/confirmar-email/[token]`, via `confirmarAlteracaoEmailPorToken`), provando que o usuário tem acesso à nova caixa de entrada.
+
+Esse desenho (confirmar no e-mail atual para trocar senha; confirmar no e-mail novo para trocar e-mail) é o padrão adotado por serviços como GitHub e Google, para impedir que uma sessão comprometida sozinha baste para sequestrar a conta.
+
+## Middleware
+
+Nesta versão do Next.js, o middleware é declarado em `proxy.ts` (não `middleware.ts`). Ele redireciona para `/login` qualquer rota não pública quando não há sessão autenticada. Rotas públicas ficam listadas em `publicExactRoutes`.
