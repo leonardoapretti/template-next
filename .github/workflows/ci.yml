@@ -37,6 +37,8 @@ jobs:
 
       - run: pnpm exec prisma generate
 
+      - run: pnpm exec fumadocs-mdx
+
       - run: pnpm lint
 
       - run: pnpm exec tsc --noEmit
@@ -92,6 +94,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm exec prisma generate
+
+      - run: pnpm exec fumadocs-mdx
 
       - run: pnpm exec prisma migrate deploy
 
