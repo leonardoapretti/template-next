@@ -1,8 +1,8 @@
 // src/lib/services/email.service.ts
 import { db } from "@/lib/db";
 import { resend, resendConfig } from "@/lib/email/resend";
-import { DataBaseResponse } from "./config/database-response";
 import { getUsuarioAtualId } from "../access-control/current-user";
+import { DataBaseResponse } from "./config/database-response";
 
 export type EnviarEmailParams = {
   destinatario?: string;
@@ -233,7 +233,6 @@ class EmailService {
       });
     }
   }
-
 }
 
 export const emailService = new EmailService();

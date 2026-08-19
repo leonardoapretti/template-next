@@ -1,16 +1,10 @@
 // packages/design-system/components/multi-step-form/context.tsx
 
-'use client';
+"use client";
 
-import {
-  createContext,
-  useContext,
-} from 'react';
+import { createContext, useContext } from "react";
 
-import type {
-  FieldValues,
-  UseFormReturn,
-} from 'react-hook-form';
+import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 export interface MultiStepFormContextValue {
   form: UseFormReturn<any>;
@@ -25,20 +19,13 @@ export interface MultiStepFormContextValue {
 
   isLastStep: boolean;
 
-  nextStep: (
-    e?: React.SyntheticEvent
-  ) => Promise<void>;
+  nextStep: (e?: React.SyntheticEvent) => Promise<void>;
 
-  prevStep: (
-    e?: React.SyntheticEvent
-  ) => void;
+  prevStep: (e?: React.SyntheticEvent) => void;
 
-  goToStep: (
-    index: number,
-    skipValidation?: boolean
-  ) => Promise<void>;
+  goToStep: (index: number, skipValidation?: boolean) => Promise<void>;
 
-  direction?: 'forward' | 'backward';
+  direction?: "forward" | "backward";
 
   isValid: boolean;
 
@@ -52,41 +39,28 @@ export interface MultiStepFormContextValue {
 
   highestCompletedStep: number;
 
-  getErrorsForStep: (
-    stepName: string
-  ) => Record<string, unknown>;
+  getErrorsForStep: (stepName: string) => Record<string, unknown>;
 
   resetForm: () => void;
 }
 
-export const MultiStepFormContext =
-  createContext<MultiStepFormContextValue | null>(
-    null
-  );
+export const MultiStepFormContext = createContext<MultiStepFormContextValue | null>(null);
 
 export function useMultiStepFormContext() {
-  const context = useContext(
-    MultiStepFormContext
-  );
+  const context = useContext(MultiStepFormContext);
 
   if (!context) {
-    throw new Error(
-      'useMultiStepFormContext must be used within a MultiStepForm'
-    );
+    throw new Error("useMultiStepFormContext must be used within a MultiStepForm");
   }
 
   return context;
 }
 
 interface MultiStepFormContextProviderProps {
-  children: (
-    context: MultiStepFormContextValue
-  ) => React.ReactNode;
+  children: (context: MultiStepFormContextValue) => React.ReactNode;
 }
 
-export function MultiStepFormContextProvider({
-  children,
-}: MultiStepFormContextProviderProps) {
+export function MultiStepFormContextProvider({ children }: MultiStepFormContextProviderProps) {
   const context = useMultiStepFormContext();
 
   return children(context);

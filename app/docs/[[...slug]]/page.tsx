@@ -1,8 +1,8 @@
-import { source } from "@/lib/fumadocs/source";
-import { getMDXComponents } from "@/mdx-components";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { notFound } from "next/navigation";
+import { source } from "@/lib/fumadocs/source";
+import { getMDXComponents } from "@/mdx-components";
 
 export default async function PublicDocsPage(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params;

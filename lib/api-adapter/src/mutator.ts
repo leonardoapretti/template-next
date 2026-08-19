@@ -1,18 +1,18 @@
-import { ApiError } from './api-error-response';
-import { ApiResponse } from './api-response';
-import { ResponseMetadata } from './response-metadata';
-import type { HttpRequestConfig, MutatorOptions } from './types';
+import { ApiError } from "./api-error-response";
+import { ApiResponse } from "./api-response";
+import { ResponseMetadata } from "./response-metadata";
+import type { HttpRequestConfig, MutatorOptions } from "./types";
 import {
   buildUrlWithParams,
   handleErrorResponse,
   handleSuccessResponse,
   prepareRequest,
-} from './utils';
+} from "./utils";
 
 export const requestMutator = async <T>(
   requestConfig: HttpRequestConfig,
   init?: RequestInit,
-  mutatorOptions?: MutatorOptions
+  mutatorOptions?: MutatorOptions,
 ): Promise<ApiResponse<T>> => {
   const { isPublic = false, logger } = mutatorOptions ?? {};
   const url = buildUrlWithParams(requestConfig.url, requestConfig.params);
@@ -24,12 +24,7 @@ export const requestMutator = async <T>(
     token = await mutatorOptions.getAuthToken();
   }
 
-  const { headers, body } = prepareRequest(
-    requestConfig,
-    init,
-    token,
-    isPublic
-  );
+  const { headers, body } = prepareRequest(requestConfig, init, token, isPublic);
   const fetchOptions: RequestInit = {
     method,
     headers,
@@ -42,26 +37,23 @@ export const requestMutator = async <T>(
   try {
     response = await fetch(url, fetchOptions);
   } catch (e) {
-    const message =
-      e instanceof Error
-        ? e.message
-        : 'Falha de rede ao comunicar com o servidor.';
+    const message = e instanceof Error ? e.message : "Falha de rede ao comunicar com o servidor.";
 
-    logger?.error({ method, url, error: message }, 'Erro de rede');
+    logger?.error({ method, url, error: message }, "Erro de rede");
 
     // Depois
     return new ApiResponse(
       false,
       500,
-      new ApiError([message], 'about:blank', 'Network Error', 500),
-      {} as ResponseMetadata
+      new ApiError([message], "about:blank", "Network Error", 500),
+      {} as ResponseMetadata,
     );
   }
 
   const durationMs = Date.now() - startTime;
   const responseMetadata = new ResponseMetadata(response);
 
-  const traceId = response.headers.get('x-trace-id');
+  const traceId = response.headers.get("x-trace-id");
 
   if (!response.ok) {
     logger?.error(
@@ -73,7 +65,7 @@ export const requestMutator = async <T>(
         traceId,
         responseMetadata,
       },
-      'Erro http'
+      "Erro http",
     );
     return handleErrorResponse<T>(response, responseMetadata);
   }
@@ -87,12 +79,8 @@ export const requestMutator = async <T>(
       traceId,
       responseMetadata,
     },
-    'Sucesso'
+    "Sucesso",
   );
 
-  return handleSuccessResponse<T>(
-    response,
-    responseMetadata,
-    requestConfig.responseType
-  );
+  return handleSuccessResponse<T>(response, responseMetadata, requestConfig.responseType);
 };

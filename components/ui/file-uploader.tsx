@@ -2,7 +2,11 @@
 
 import { FileText, UploadIcon, X } from "lucide-react";
 import * as React from "react";
-import Dropzone, { type DropzoneProps, type DropzoneState, type FileRejection } from "react-dropzone";
+import Dropzone, {
+  type DropzoneProps,
+  type DropzoneState,
+  type FileRejection,
+} from "react-dropzone";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -166,8 +170,7 @@ function getDropzoneMessage({
   if (files.length > 0) {
     return {
       icon: <FileText className="size-6 text-primary" />,
-      title:
-        files.length === 1 ? "1 arquivo selecionado" : `${files.length} arquivos selecionados`,
+      title: files.length === 1 ? "1 arquivo selecionado" : `${files.length} arquivos selecionados`,
       description: reachedLimit
         ? `Limite máximo de ${maxFileCount} arquivo${maxFileCount > 1 ? "s" : ""} atingido`
         : "Clique ou arraste novos arquivos para adicionar",
@@ -252,7 +255,13 @@ function FileCard({
         {progress !== undefined && <Progress value={progress} />}
       </div>
 
-      <Button className="size-7 shrink-0" onClick={onRemove} size="icon-sm" type="button" variant="outline">
+      <Button
+        className="size-7 shrink-0"
+        onClick={onRemove}
+        size="icon-sm"
+        type="button"
+        variant="outline"
+      >
         <X className="size-4" />
         <span className="sr-only">Remover arquivo</span>
       </Button>

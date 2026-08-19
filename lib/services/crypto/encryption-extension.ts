@@ -8,7 +8,10 @@ const MODELS_COM_PII_CIFRADA = new Set(["User"]);
 // antes do hash/cifragem para garantir que o mesmo valor lógico (ex: e-mails
 // com case/espaço diferentes) sempre gere o mesmo hash, mesmo que algum
 // caller esqueça de normalizar antes.
-const CAMPOS_COM_HASH: Record<string, { hashField: string; normalizar?: (valor: string) => string }> = {
+const CAMPOS_COM_HASH: Record<
+  string,
+  { hashField: string; normalizar?: (valor: string) => string }
+> = {
   email: { hashField: "emailHash", normalizar: (valor) => valor.trim().toLowerCase() },
 };
 

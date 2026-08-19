@@ -66,21 +66,21 @@ export class ResponseMetadata {
 
   // --- Cache Utils ---
   getCacheStatus(): string | null {
-    return this._headers.get('x-vercel-cache') || this._headers.get('x-cache');
+    return this._headers.get("x-vercel-cache") || this._headers.get("x-cache");
   }
 
   getCacheAge(): number | null {
-    const age = this._headers.get('age');
+    const age = this._headers.get("age");
     return age ? Number.parseInt(age, 10) : null;
   }
 
   isCacheHit(): boolean {
     const status = this.getCacheStatus();
-    return status === 'HIT';
+    return status === "HIT";
   }
 
   isCacheMiss(): boolean {
     const status = this.getCacheStatus();
-    return status === 'MISS';
+    return status === "MISS";
   }
 }

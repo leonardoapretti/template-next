@@ -1,6 +1,6 @@
-import { DataBaseErrorSection } from "@/components/database-error-section";
 import { AlertTriangle } from "lucide-react";
 import type { JSX, ReactNode } from "react";
+import { DataBaseErrorSection } from "@/components/database-error-section";
 import { DataBaseResponseValidatorBase } from "./database-response-validator-base";
 
 type RenderDataBaseResponseValidatorOptions = {

@@ -1,8 +1,8 @@
+import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import withSerwistInit from "@serwist/next";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
-import { spawnSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
 
 const revision =
   spawnSync("git", ["rev-parse", "HEAD"], {

@@ -1,3 +1,7 @@
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 import PWAProvider from "@/components/providers/pwa-provider";
 import { ReactQueryProvider } from "@/components/providers/query-client-provider";
 import { AuthProvider } from "@/components/providers/session-provider";
@@ -5,10 +9,6 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils/tailwind";
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { Suspense } from "react";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });

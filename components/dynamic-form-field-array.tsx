@@ -1,7 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
 import {
   type ArrayPath,
@@ -10,6 +8,8 @@ import {
   type FieldValues,
   useFieldArray,
 } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 interface DynamicFieldArrayProps<T extends FieldValues> {
   control: Control<T>;

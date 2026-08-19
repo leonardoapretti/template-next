@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { encrypt, hashForLookup } from "@/lib/services/crypto/encryption-engine";
-import { encryptionExtension, recifrarParaAuditoria } from "@/lib/services/crypto/encryption-extension";
+import {
+  encryptionExtension,
+  recifrarParaAuditoria,
+} from "@/lib/services/crypto/encryption-extension";
 
 const allOperations = encryptionExtension.query.$allModels.$allOperations;
 
@@ -30,7 +33,9 @@ describe("encryptionExtension", () => {
 
       await promise;
 
-      const argsRecebidos = query.mock.calls[0][0] as { data: { email: string; emailHash: string } };
+      const argsRecebidos = query.mock.calls[0][0] as {
+        data: { email: string; emailHash: string };
+      };
 
       expect(argsRecebidos.data.email).toMatch(/^v1:/);
       expect(argsRecebidos.data.emailHash).toBe(hashForLookup("ana@example.com"));

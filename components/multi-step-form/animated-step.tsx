@@ -1,6 +1,8 @@
 //packages/design-system/components/multi-step-form/animated-step.tsx
-import { cn } from '@/lib/utils';
-import React, { useEffect, useRef, useState } from 'react';
+
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function AnimatedStep({
   isActive,
@@ -9,7 +11,7 @@ export function AnimatedStep({
   index,
   currentIndex,
 }: React.PropsWithChildren<{
-  direction: 'forward' | 'backward' | undefined;
+  direction: "forward" | "backward" | undefined;
   isActive: boolean;
   index: number;
   currentIndex: number;
@@ -29,7 +31,7 @@ export function AnimatedStep({
   useEffect(() => {
     if (isActive && stepRef.current) {
       const focusableElement = stepRef.current.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
       focusableElement?.focus();
     }
@@ -40,14 +42,14 @@ export function AnimatedStep({
   }
 
   const baseClasses =
-    'top-0 left-0 w-full h-full transition-all duration-300 ease-in-out animate-in fade-in zoom-in-95';
-  const visibilityClasses = isActive ? 'opacity-100' : 'opacity-0 absolute';
+    "top-0 left-0 w-full h-full transition-all duration-300 ease-in-out animate-in fade-in zoom-in-95";
+  const visibilityClasses = isActive ? "opacity-100" : "opacity-0 absolute";
   const transformClasses = cn(
-    'translate-x-0',
+    "translate-x-0",
     !isActive && {
-      '-translate-x-full': direction === 'forward' || index < currentIndex,
-      'translate-x-full': direction === 'backward' || index > currentIndex,
-    }
+      "-translate-x-full": direction === "forward" || index < currentIndex,
+      "translate-x-full": direction === "backward" || index > currentIndex,
+    },
   );
 
   return (

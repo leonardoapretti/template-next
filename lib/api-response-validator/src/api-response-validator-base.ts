@@ -1,4 +1,4 @@
-import { ApiResponse } from "@/lib/api-adapter/src";
+import type { ApiResponse } from "@/lib/api-adapter/src";
 
 export type CustomValidation<T = unknown> = {
   validator: (data: T) => boolean;
@@ -7,14 +7,8 @@ export type CustomValidation<T = unknown> = {
 
 export class ApiResponseValidatorBase {
   protected readonly responseMap = new Map<string, ApiResponse<unknown>>();
-  protected readonly customValidationsMap = new Map<
-    string,
-    CustomValidation<unknown>[]
-  >();
-  protected readonly httpValidationsMap = new Map<
-    string,
-    Record<number, string>
-  >();
+  protected readonly customValidationsMap = new Map<string, CustomValidation<unknown>[]>();
+  protected readonly httpValidationsMap = new Map<string, Record<number, string>>();
 
   constructor(responses?: Record<string, ApiResponse<unknown>>) {
     if (responses) {
@@ -24,11 +18,7 @@ export class ApiResponseValidatorBase {
     }
   }
 
-  addCustomValidation<T>(
-    key: string,
-    validator: (data: T) => boolean,
-    errorMessage: string
-  ): void {
+  addCustomValidation<T>(key: string, validator: (data: T) => boolean, errorMessage: string): void {
     const newValidation = {
       validator: validator as (data: unknown) => boolean,
       errorMessage,
@@ -50,7 +40,7 @@ export class ApiResponseValidatorBase {
     key: string,
     response: ApiResponse<T>,
     attribute: K,
-    errorMessage?: string
+    errorMessage?: string,
   ): response is ApiResponse<T & Record<K, NonNullable<T[K]>>> {
     const data = response.getValidData();
 
@@ -62,8 +52,7 @@ export class ApiResponseValidatorBase {
 
     if (!exists) {
       const message =
-        errorMessage ??
-        `O atributo "${String(attribute)}" está ausente na resposta "${key}".`;
+        errorMessage ?? `O atributo "${String(attribute)}" está ausente na resposta "${key}".`;
       const existing = this.customValidationsMap.get(key) || [];
       existing.push({
         validator: () => false,
@@ -75,17 +64,12 @@ export class ApiResponseValidatorBase {
     return exists;
   }
 
-  getErrorMessages(
-    keys: string | string[],
-    fallbackErrorMessage?: string
-  ): string[] {
+  getErrorMessages(keys: string | string[], fallbackErrorMessage?: string): string[] {
     const allErrors = new Set<string>();
     for (const key of this.normalizeKeys(keys)) {
       const response = this.responseMap.get(key);
       if (!response) {
-        allErrors.add(
-          `Configuração de resposta não encontrada para a chave: "${key}"`
-        );
+        allErrors.add(`Configuração de resposta não encontrada para a chave: "${key}"`);
         continue;
       }
       if (response.isSuccess()) {
@@ -94,11 +78,7 @@ export class ApiResponseValidatorBase {
           allErrors.add(error);
         }
       } else {
-        const apiError = this._getApiErrorMessage(
-          key,
-          response,
-          fallbackErrorMessage
-        );
+        const apiError = this._getApiErrorMessage(key, response, fallbackErrorMessage);
         allErrors.add(apiError);
       }
     }
@@ -129,7 +109,7 @@ export class ApiResponseValidatorBase {
   protected _getApiErrorMessage(
     key: string,
     response: ApiResponse<unknown>,
-    fallbackErrorMessage?: string
+    fallbackErrorMessage?: string,
   ): string {
     const httpMessages = this.httpValidationsMap.get(key);
     const { status } = response;
@@ -142,13 +122,10 @@ export class ApiResponseValidatorBase {
     }
 
     const responseError = response.getErrorMessage();
-    return `${responseError ?? 'Ocorreu um erro inesperado.'}`;
+    return `${responseError ?? "Ocorreu um erro inesperado."}`;
   }
 
-  protected _getCustomValidationErrors(
-    key: string,
-    response: ApiResponse<unknown>
-  ): string[] {
+  protected _getCustomValidationErrors(key: string, response: ApiResponse<unknown>): string[] {
     const validationErrors: string[] = [];
     const customValidations = this.customValidationsMap.get(key);
     if (customValidations) {

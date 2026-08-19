@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
-import { db, type DbClient, type DbTransactionClient } from "@/lib/db";
+import { type DbClient, type DbTransactionClient, db } from "@/lib/db";
 import logger from "@/lib/logger/src";
 
 type PrismaClientOuTx = DbClient | DbTransactionClient;
@@ -43,7 +43,9 @@ function canonicalizar(valor: unknown): unknown {
 }
 
 function hashConteudo(conteudo: unknown) {
-  return createHash("sha256").update(JSON.stringify(canonicalizar(conteudo))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(canonicalizar(conteudo)))
+    .digest("hex");
 }
 
 function gerarHashAuditLog(

@@ -13,11 +13,11 @@ export class ApiError {
 
   constructor(
     messages: string[],
-    type = 'about:blank',
-    title = 'Error',
+    type = "about:blank",
+    title = "Error",
     status = 0,
-    detail = '',
-    instance = ''
+    detail = "",
+    instance = "",
   ) {
     this._type = type;
     this._title = title;

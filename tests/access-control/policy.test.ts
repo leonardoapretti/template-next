@@ -1,5 +1,5 @@
-import { canActAs } from "@/lib/access-control/policy";
 import { describe, expect, it } from "vitest";
+import { canActAs } from "@/lib/access-control/policy";
 import { ctxAdmin, ctxUsuario } from "../helpers/access-context-fixtures";
 
 describe("access-control policy", () => {

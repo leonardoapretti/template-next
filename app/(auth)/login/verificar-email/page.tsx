@@ -1,11 +1,11 @@
+import { MailCheck, MailQuestion, RefreshCcw } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { userService } from "@/lib/services/user.service";
-import { MailCheck, MailQuestion, RefreshCcw } from "lucide-react";
-import Link from "next/link";
-import { redirect } from "next/navigation";
 import VerificarEmailForm from "./_components/verificar-email-form";
 
 type VerificarEmailPageProps = {

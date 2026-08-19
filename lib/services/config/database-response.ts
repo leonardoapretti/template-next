@@ -1,5 +1,5 @@
-import { DataBaseErrorSection } from "@/components/database-error-section";
 import { createElement, type ReactNode } from "react";
+import { DataBaseErrorSection } from "@/components/database-error-section";
 
 type DataBaseErrorInput = {
   code?: string;

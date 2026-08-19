@@ -1,35 +1,23 @@
-'use client';
+"use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type {
-  FieldValues,
-  Path,
-  UseFormReturn,
-} from 'react-hook-form';
+import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
-import { toast } from 'sonner';
-import { z } from 'zod';
+import { toast } from "sonner";
+import { z } from "zod";
 
 export function useMultiStepForm<TFieldValues extends FieldValues>(
   schema: z.ZodType<TFieldValues>,
   form: UseFormReturn<TFieldValues>,
   stepNames: string[],
-  storageKey?: string
+  storageKey?: string,
 ) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   const [highestCompletedStep, setHighestCompletedStep] = useState(0);
 
-  const [direction, setDirection] = useState<
-    'forward' | 'backward' | undefined
-  >();
+  const [direction, setDirection] = useState<"forward" | "backward" | undefined>();
 
   const [hasSavedData, setHasSavedData] = useState(false);
 
@@ -57,11 +45,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
       setHighestCompletedStep(parsed.stepIndex ?? 0);
       setHasSavedData(true);
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Erro ao recuperar formulário salvo'
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao recuperar formulário salvo");
     }
   }, [storageKey, form]);
 
@@ -82,7 +66,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
         JSON.stringify({
           values,
           stepIndex: currentStepIndex,
-        })
+        }),
       );
 
       setHasSavedData(true);
@@ -142,7 +126,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
 
       return fields as Path<TFieldValues>[];
     },
-    [schema]
+    [schema],
   );
 
   // -----------------------------
@@ -152,23 +136,26 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
     (stepName: string) => {
       const fields = getFieldsForStep(stepName);
 
-      return fields.reduce((acc, field) => {
-        const error = field
-          .split('.')
-          .reduce<unknown>(
-            (obj, key) =>
-              obj && typeof obj === "object" ? (obj as Record<string, unknown>)[key] : undefined,
-            form.formState.errors,
-          );
+      return fields.reduce(
+        (acc, field) => {
+          const error = field
+            .split(".")
+            .reduce<unknown>(
+              (obj, key) =>
+                obj && typeof obj === "object" ? (obj as Record<string, unknown>)[key] : undefined,
+              form.formState.errors,
+            );
 
-        if (error) {
-          acc[field] = error;
-        }
+          if (error) {
+            acc[field] = error;
+          }
 
-        return acc;
-      }, {} as Record<string, unknown>);
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      );
     },
-    [getFieldsForStep, form.formState.errors]
+    [getFieldsForStep, form.formState.errors],
   );
 
   // -----------------------------
@@ -183,7 +170,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
       const fieldsToValidate = getFieldsForStep(currentStepName);
 
       if (fieldsToValidate.length === 0) {
-        console.warn('Step sem campos mapeados:', currentStepName);
+        console.warn("Step sem campos mapeados:", currentStepName);
         return;
       }
 
@@ -192,7 +179,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
       if (!isValid) return;
 
       if (currentStepIndex < stepNames.length - 1) {
-        setDirection('forward');
+        setDirection("forward");
 
         setCurrentStepIndex((prev) => {
           const nextIndex = prev + 1;
@@ -203,7 +190,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
         });
       }
     },
-    [form, stepNames, currentStepIndex, getFieldsForStep]
+    [form, stepNames, currentStepIndex, getFieldsForStep],
   );
 
   // -----------------------------
@@ -215,10 +202,10 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
 
       if (currentStepIndex === 0) return;
 
-      setDirection('backward');
+      setDirection("backward");
       setCurrentStepIndex((prev) => prev - 1);
     },
-    [currentStepIndex]
+    [currentStepIndex],
   );
 
   // -----------------------------
@@ -226,16 +213,12 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
   // -----------------------------
   const goToStep = useCallback(
     async (index: number, skipValidation = false) => {
-      if (
-        index < 0 ||
-        index >= stepNames.length ||
-        index > highestCompletedStep
-      ) {
+      if (index < 0 || index >= stepNames.length || index > highestCompletedStep) {
         return;
       }
 
       if (skipValidation) {
-        setDirection(index > currentStepIndex ? 'forward' : 'backward');
+        setDirection(index > currentStepIndex ? "forward" : "backward");
         setCurrentStepIndex(index);
         return;
       }
@@ -245,7 +228,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
       const fieldsToValidate = getFieldsForStep(currentStepName);
 
       if (fieldsToValidate.length === 0) {
-        console.warn('Step sem campos mapeados:', currentStepName);
+        console.warn("Step sem campos mapeados:", currentStepName);
         return;
       }
 
@@ -253,16 +236,10 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
 
       if (!isValid) return;
 
-      setDirection(index > currentStepIndex ? 'forward' : 'backward');
+      setDirection(index > currentStepIndex ? "forward" : "backward");
       setCurrentStepIndex(index);
     },
-    [
-      stepNames,
-      currentStepIndex,
-      highestCompletedStep,
-      form,
-      getFieldsForStep,
-    ]
+    [stepNames, currentStepIndex, highestCompletedStep, form, getFieldsForStep],
   );
 
   // -----------------------------
@@ -335,6 +312,6 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
       highestCompletedStep,
       getErrorsForStep,
       resetForm,
-    ]
+    ],
   );
 }

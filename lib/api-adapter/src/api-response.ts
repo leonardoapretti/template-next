@@ -1,37 +1,31 @@
 // api-response.ts
-import type { ApiError } from './api-error-response';
+import type { ApiError } from "./api-error-response";
 
-import type { ApiSuccess } from './api-success-response';
-import type { ResponseMetadata } from './response-metadata';
-import type {
-  SerializedApiResponseProps,
-  SerializedBlob,
-  SerializedBlobResponse,
-} from './types';
+import type { ApiSuccess } from "./api-success-response";
+import type { ResponseMetadata } from "./response-metadata";
+import type { SerializedApiResponseProps, SerializedBlob, SerializedBlobResponse } from "./types";
 
 // Regex no escopo superior para melhor performance
 const FILENAME_REGEX = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
 
 const MIME_TO_EXT: Record<string, string> = {
-  'application/pdf': '.pdf',
-  'application/zip': '.zip',
-  'application/x-zip-compressed': '.zip',
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/gif': '.gif',
-  'image/svg+xml': '.svg',
-  'text/plain': '.txt',
-  'text/csv': '.csv',
-  'application/json': '.json',
-  'application/xml': '.xml',
-  'application/msword': '.doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-    '.docx',
-  'application/vnd.ms-excel': '.xls',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
-  'application/vnd.ms-powerpoint': '.ppt',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-    '.pptx',
+  "application/pdf": ".pdf",
+  "application/zip": ".zip",
+  "application/x-zip-compressed": ".zip",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/gif": ".gif",
+  "image/svg+xml": ".svg",
+  "text/plain": ".txt",
+  "text/csv": ".csv",
+  "application/json": ".json",
+  "application/xml": ".xml",
+  "application/msword": ".doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "application/vnd.ms-excel": ".xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+  "application/vnd.ms-powerpoint": ".ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
 };
 
 export class ApiResponse<T> {
@@ -44,7 +38,7 @@ export class ApiResponse<T> {
     success: boolean,
     status: number,
     response: ApiSuccess<T> | ApiError,
-    metadata: ResponseMetadata
+    metadata: ResponseMetadata,
   ) {
     this._success = success;
     this._status = status;
@@ -80,14 +74,14 @@ export class ApiResponse<T> {
 
   // --- Utility methods ---
   getTraceId(): string | null {
-    return this.metadata.headers.get('x-trace-id');
+    return this.metadata.headers.get("x-trace-id");
   }
 
   getErrorTraceMessage(): string {
     const traceId = this.getTraceId();
     return traceId
       ? ` Informe o código de rastreamento a seguir aos administradores do sistema: ${traceId}`
-      : '';
+      : "";
   }
 
   getErrorMessage(): string {
@@ -105,8 +99,8 @@ export class ApiResponse<T> {
   }
 
   getCreatedId(): string | null {
-    const locationHeader = this._metadata.headers.get('location');
-    return locationHeader?.split('/').at(-1) ?? null;
+    const locationHeader = this._metadata.headers.get("location");
+    return locationHeader?.split("/").at(-1) ?? null;
   }
 
   // --- Download Utils ---
@@ -129,24 +123,20 @@ export class ApiResponse<T> {
     const data = this.response.data;
 
     if (!(data instanceof Blob)) {
-      throw new Error('Os dados da resposta não são um arquivo (Blob)');
+      throw new Error("Os dados da resposta não são um arquivo (Blob)");
     }
 
     const arrayBuffer = await data.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
 
-    const mimeType = data.type || 'application/octet-stream';
+    const mimeType = data.type || "application/octet-stream";
     const extension = this.getExtensionFromContentType(mimeType);
 
-    const contentDisposition =
-      this._metadata.headers.get('content-disposition') ?? '';
+    const contentDisposition = this._metadata.headers.get("content-disposition") ?? "";
     const filenameMatch = contentDisposition.match(FILENAME_REGEX);
-    const extractedFilename = filenameMatch?.at(1)?.replace(/['"]/g, '').trim();
+    const extractedFilename = filenameMatch?.at(1)?.replace(/['"]/g, "").trim();
 
-    const filename =
-      extractedFilename ??
-      fallbackFilename ??
-      `download_${Date.now()}${extension}`;
+    const filename = extractedFilename ?? fallbackFilename ?? `download_${Date.now()}${extension}`;
 
     return { base64, filename, mimeType };
   }
@@ -156,10 +146,10 @@ export class ApiResponse<T> {
    */
   getExtensionFromContentType(contentType: string | null): string {
     if (!contentType) {
-      return '';
+      return "";
     }
-    const baseType = contentType.split(';')[0].trim();
-    return MIME_TO_EXT[baseType] || '';
+    const baseType = contentType.split(";")[0].trim();
+    return MIME_TO_EXT[baseType] || "";
   }
 
   // -----------------------------------------------------------------------
@@ -171,7 +161,7 @@ export class ApiResponse<T> {
    * Server e Client Components no Next.js.
    */
   serialize<E extends Record<string, unknown> = Record<string, never>>(
-    extras?: E
+    extras?: E,
   ): SerializedApiResponseProps<T> & E {
     const base = {
       success: this.success,
@@ -190,7 +180,7 @@ export class ApiResponse<T> {
         success: false,
         status: 500,
         data: null,
-        errorMessage: 'Erro interno de serialização',
+        errorMessage: "Erro interno de serialização",
         timestamp: new Date().toISOString(),
         ...extras,
       } as SerializedApiResponseProps<T> & E;
@@ -201,9 +191,7 @@ export class ApiResponse<T> {
    * Serializa uma ApiResponse<Blob> para transferência server → client.
    * Deve ser chamado apenas em Server Actions ou Route Handlers.
    */
-  async serializeAsBlob(
-    fallbackFilename?: string
-  ): Promise<SerializedBlobResponse> {
+  async serializeAsBlob(fallbackFilename?: string): Promise<SerializedBlobResponse> {
     if (!this.isSuccess()) {
       return {
         success: false,
@@ -227,8 +215,7 @@ export class ApiResponse<T> {
       return {
         success: false,
         status: 500,
-        errorMessage:
-          error instanceof Error ? error.message : 'Erro ao serializar arquivo',
+        errorMessage: error instanceof Error ? error.message : "Erro ao serializar arquivo",
         timestamp: new Date().toISOString(),
         blob: null,
       };

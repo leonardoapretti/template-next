@@ -1,9 +1,5 @@
 "use client";
 
-import { FormErrorMessage } from "@/components/form-error-message";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Mail, UserRound } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +7,10 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { type FieldError, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { FormErrorMessage } from "@/components/form-error-message";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cadastrarAction } from "./actions";
 import { type CadastroFormSchema, cadastroSchema } from "./schema";
 

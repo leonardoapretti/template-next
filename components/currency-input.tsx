@@ -1,8 +1,8 @@
 "use client";
 
+import { forwardRef, useRef, useState } from "react";
 import { formatCurrencyInput } from "@/hooks/use-currency-mask";
 import { cn } from "@/lib/utils/tailwind";
-import { forwardRef, useRef, useState } from "react";
 import { Input } from "./ui/input";
 
 interface CurrencyInputProps

@@ -1,5 +1,5 @@
-import { emailSchema } from "@/lib/zod-schemas/email";
 import z from "zod";
+import { emailSchema } from "@/lib/zod-schemas/email";
 
 export const verificarEmailSchema = z.object({
   email: emailSchema,

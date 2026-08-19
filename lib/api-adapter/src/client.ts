@@ -1,10 +1,10 @@
-import { requestMutator } from './mutator';
+import { requestMutator } from "./mutator";
 import type {
   AdapterRequestInit,
   ApiAdapterClientConfig,
   HttpRequestConfig,
   MutatorOptions,
-} from './types';
+} from "./types";
 
 /**
  * Estende o RequestInit nativo adicionando opções específicas do adapter.
@@ -25,9 +25,7 @@ export class ApiAdapterClient {
   }
 
   request<T>(config: HttpRequestConfig, init?: AdapterRequestInit) {
-    const url = config.url.startsWith('http')
-      ? config.url
-      : `${this.config.baseUrl}${config.url}`;
+    const url = config.url.startsWith("http") ? config.url : `${this.config.baseUrl}${config.url}`;
 
     const { params, mutatorOptions, ...fetchInit } = init ?? {};
 
@@ -40,27 +38,27 @@ export class ApiAdapterClient {
     return requestMutator<T>(
       { ...config, url, params: params ?? config.params },
       fetchInit,
-      resolvedMutatorOptions
+      resolvedMutatorOptions,
     );
   }
 
   get<T>(url: string, init?: AdapterRequestInit) {
-    return this.request<T>({ url, method: 'GET' }, init);
+    return this.request<T>({ url, method: "GET" }, init);
   }
 
   post<T, B = unknown>(url: string, body?: B, init?: AdapterRequestInit) {
-    return this.request<T>({ url, method: 'POST', data: body }, init);
+    return this.request<T>({ url, method: "POST", data: body }, init);
   }
 
   put<T, B = unknown>(url: string, body?: B, init?: AdapterRequestInit) {
-    return this.request<T>({ url, method: 'PUT', data: body }, init);
+    return this.request<T>({ url, method: "PUT", data: body }, init);
   }
 
   patch<T, B = unknown>(url: string, body?: B, init?: AdapterRequestInit) {
-    return this.request<T>({ url, method: 'PATCH', data: body }, init);
+    return this.request<T>({ url, method: "PATCH", data: body }, init);
   }
 
   delete<T>(url: string, init?: AdapterRequestInit) {
-    return this.request<T>({ url, method: 'DELETE' }, init);
+    return this.request<T>({ url, method: "DELETE" }, init);
   }
 }

@@ -1,5 +1,5 @@
-import { signOut } from "@/auth";
 import { NextResponse } from "next/server";
+import { signOut } from "@/auth";
 
 const AUTH_COOKIES = [
   "authjs.session-token",

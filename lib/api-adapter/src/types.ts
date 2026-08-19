@@ -10,7 +10,7 @@ export interface HttpRequestConfig {
   params?: Record<string, unknown>;
   signal?: AbortSignal;
   disableCache?: boolean; // Desabilita cache automático para GET/HEAD/OPTIONS
-  responseType?: 'json' | 'text' | 'blob';
+  responseType?: "json" | "text" | "blob";
 }
 export interface ApiAdapterClientConfig {
   baseUrl?: string;

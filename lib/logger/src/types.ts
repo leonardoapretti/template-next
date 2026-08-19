@@ -1,4 +1,4 @@
-import type { LoggerOptions } from 'pino';
+import type { LoggerOptions } from "pino";
 
 export interface LogContext {
   /** ID de correlação para rastrear requests entre serviços */
@@ -27,10 +27,10 @@ export interface CreateLoggerOptions {
 }
 
 export const LEVEL_LABELS: Record<number, string> = {
-  10: 'trace',
-  20: 'debug',
-  30: 'info',
-  40: 'warn',
-  50: 'error',
-  60: 'fatal',
+  10: "trace",
+  20: "debug",
+  30: "info",
+  40: "warn",
+  50: "error",
+  60: "fatal",
 };

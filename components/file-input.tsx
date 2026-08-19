@@ -1,8 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import { useId, useState } from "react";
+import { cn } from "@/lib/utils";
 
 type FileInputProps = {
   accept?: string;

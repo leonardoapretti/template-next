@@ -1,7 +1,7 @@
 // download-utils.ts
 // Deve ser importado apenas em Client Components ('use client').
 
-import type { SerializedBlobResponse } from './types';
+import type { SerializedBlobResponse } from "./types";
 
 /**
  * Converte um SerializedBlobResponse (vindo de uma Server Action) em um
@@ -32,7 +32,7 @@ export function triggerDownload(result: SerializedBlobResponse): boolean {
   const blob = new Blob([byteArray], { type: mimeType });
   const url = URL.createObjectURL(blob);
 
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
