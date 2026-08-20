@@ -2,7 +2,6 @@
 set -Eeuo pipefail
 
 PROJECT_DIR="/var/www/template-next"
-BRANCH="main"
 LOCK_FILE="/tmp/template-next-deploy.lock"
 COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 
@@ -35,18 +34,6 @@ flock -n 200 || {
 
 log "Entrando no projeto..."
 cd "$PROJECT_DIR"
-
-log "Verificando branch..."
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
-  echo "Branch atual: $CURRENT_BRANCH"
-  echo "Branch esperada: $BRANCH"
-  exit 1
-fi
-
-log "Atualizando código..."
-git fetch origin "$BRANCH"
-git reset --hard "origin/$BRANCH"
 
 log "Buildando imagem..."
 $COMPOSE build --progress=plain app
