@@ -4,36 +4,14 @@ services:
     ports: !reset []
     expose:
       - "3000"
+    networks:
+      - default
+      - web
 
   mysql:
     ports: !reset []
 
-  caddy:
-    image: caddy:2
-    container_name: template-next-caddy
-    restart: unless-stopped
-
-    env_file:
-      - .env
-
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-    depends_on:
-      - app
-
-    ports:
-      - "80:80"
-      - "443:443"
-
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  default:
+  web:
+    external: true
