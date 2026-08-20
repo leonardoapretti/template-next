@@ -1,11 +1,17 @@
 import { Activity } from "lucide-react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { auth } from "@/auth";
 import { CadastroForm } from "./_components/cadastro-form";
 
 export const metadata: Metadata = { title: "Cadastre-se | Template" };
 
 export default async function CadastroPage() {
+  const session = await auth();
+  if (session) {
+    redirect("/dashboard?jaLogado=1");
+  }
   await connection();
 
   return (
