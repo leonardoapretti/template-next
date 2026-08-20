@@ -3,6 +3,8 @@ name: Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -10,8 +12,69 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  quality:
+    name: Lint, typecheck e testes
+    runs-on: ubuntu-latest
+
+    # Credenciais do MySQL de serviço abaixo (root/root) são fixas e
+    # propositalmente triviais: o container é criado do zero neste job e
+    # destruído ao final, sem persistência e sem exposição fora do runner.
+    # Não reutilize essas credenciais em nenhum banco real.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: template
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/template"
+      DB_HOST: "127.0.0.1"
+      DB_PORT: "3306"
+      DB_USER: "root"
+      DB_PASSWORD: "root"
+      DB_NAME: "template"
+      NEXTAUTH_URL: ${{ secrets.CI_NEXTAUTH_URL }}
+      NEXTAUTH_SECRET: ${{ secrets.CI_NEXTAUTH_SECRET }}
+      ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm audit --prod
+
+      - run: pnpm exec prisma generate
+
+      - run: pnpm exec fumadocs-mdx
+
+      - run: pnpm exec prisma migrate deploy
+
+      - run: pnpm lint
+
+      - run: pnpm exec tsc --noEmit
+
+      - run: pnpm test
+
   deploy:
     name: Build e deploy na VPS
+    needs: quality
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
