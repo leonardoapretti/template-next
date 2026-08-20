@@ -1,5 +1,7 @@
 import { Activity } from "lucide-react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { LoginForm } from "./_components/login-form";
 
 export const metadata: Metadata = {
@@ -11,6 +13,12 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ callbackUrl?: string; retorno?: string }>;
 }) {
+  const session = await auth();
+
+  if (session?.user) {
+    redirect("/dashboard");
+  }
+
   const { callbackUrl, retorno } = await searchParams;
   return (
     <main className="flex min-h-screen">

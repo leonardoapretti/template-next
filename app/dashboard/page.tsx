@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getAccessContext } from "@/lib/access-control";
 import { AcessoNegadoToast } from "./_components/acesso-negado-toast";
+import { JaLogadoToast } from "./_components/ja-logado-toast";
 import { PromoverAdminButtonGate } from "./_components/promover-admin-button-gate";
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default async function DashboardPage() {
     <PageShell>
       <Suspense>
         <AcessoNegadoToast />
+        <JaLogadoToast />
       </Suspense>
 
       <PageHeader
