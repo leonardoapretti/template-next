@@ -1,42 +1,16 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Mail, UserRound } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { type FieldError, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { FormErrorMessage } from "@/components/form-error-message";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cadastrarAction } from "./actions";
-import { type CadastroFormSchema, cadastroSchema } from "./schema";
 
 export function CadastroForm() {
-  const router = useRouter();
-
-  const form = useForm<CadastroFormSchema>({
-    resolver: zodResolver(cadastroSchema),
-    defaultValues: {
-      nome: "",
-      email: "",
-      senha: "",
-      confirmarSenha: "",
-    },
-  });
-
-  async function onSubmit(data: CadastroFormSchema) {
-    const result = await cadastrarAction(data);
-
-    if (!result.success) {
-      toast.error(result.errorMessage ?? "Não foi possível criar sua conta.");
-      return;
-    }
-
-    router.push(result.redirectTo ?? "/login/verificar-email");
-  }
+  const [state, formAction, pending] = useActionState(cadastrarAction, null);
 
   return (
     <div className="w-full max-w-md">
@@ -47,30 +21,55 @@ export function CadastroForm() {
         </p>
       </div>
 
-      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <Campo label="Nome completo" error={form.formState.errors.nome} icon={<UserRound />}>
-          <Input autoComplete="name" {...form.register("nome")} placeholder="Seu nome" />
+      <form className="space-y-4" action={formAction}>
+        <Campo label="Nome completo" error={state?.fieldErrors?.nome?.[0]} icon={<UserRound />}>
+          <Input id="nome" name="nome" autoComplete="name" placeholder="Seu nome" required />
         </Campo>
 
-        <Campo label="E-mail" error={form.formState.errors.email} icon={<Mail />}>
+        <Campo label="E-mail" error={state?.fieldErrors?.email?.[0]} icon={<Mail />}>
           <Input
+            id="email"
+            name="email"
             autoComplete="email"
             type="email"
-            {...form.register("email")}
             placeholder="seu@email.com"
+            required
           />
         </Campo>
 
-        <Campo label="Senha" error={form.formState.errors.senha} icon={<Lock />}>
-          <Input autoComplete="new-password" type="password" {...form.register("senha")} />
+        <Campo label="Senha" error={state?.fieldErrors?.senha?.[0]} icon={<Lock />}>
+          <Input
+            id="senha"
+            name="senha"
+            autoComplete="new-password"
+            type="password"
+            minLength={8}
+            required
+          />
         </Campo>
 
-        <Campo label="Confirmar senha" error={form.formState.errors.confirmarSenha} icon={<Lock />}>
-          <Input autoComplete="new-password" type="password" {...form.register("confirmarSenha")} />
+        <Campo
+          label="Confirmar senha"
+          error={state?.fieldErrors?.confirmarSenha?.[0]}
+          icon={<Lock />}
+        >
+          <Input
+            id="confirmarSenha"
+            name="confirmarSenha"
+            autoComplete="new-password"
+            type="password"
+            required
+          />
         </Campo>
 
-        <Button className="mt-2 h-11 w-full" disabled={form.formState.isSubmitting} type="submit">
-          {form.formState.isSubmitting ? "Criando conta..." : "Cadastrar"}
+        {state?.errorMessage && !state.fieldErrors && (
+          <div className="rounded-md bg-destructive/10 px-4 py-3">
+            <p className="text-sm text-destructive">{state.errorMessage}</p>
+          </div>
+        )}
+
+        <Button className="mt-2 h-11 w-full" disabled={pending} type="submit">
+          {pending ? "Criando conta..." : "Cadastrar"}
         </Button>
       </form>
 
@@ -91,7 +90,7 @@ function Campo({
   children,
 }: {
   label: string;
-  error?: FieldError;
+  error?: string;
   icon?: ReactNode;
   children: ReactNode;
 }) {
@@ -106,7 +105,7 @@ function Campo({
         )}
         <div className={icon ? "[&>input]:pl-9" : undefined}>{children}</div>
       </div>
-      <FormErrorMessage error={error} />
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

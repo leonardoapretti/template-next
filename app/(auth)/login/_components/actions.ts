@@ -1,13 +1,18 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
 import logger from "@/lib/logger/src";
-import { DataBaseResponse } from "@/lib/services/config/database-response";
 import { userService } from "@/lib/services/user.service";
 import { getPerfilInicialPath } from "@/lib/utils/routes/perfil-routes";
 
-import { type LoginSchema, loginSchema } from "./schema";
+import { loginSchema } from "./schema";
+
+export type LoginActionState = {
+  success: boolean;
+  errorMessage: string;
+} | null;
 
 function getAuthErrorCode(error: AuthError) {
   const possibleCode = error.cause?.err?.message ?? error.message ?? "";
@@ -35,15 +40,23 @@ function getLoginErrorMessage(code: string) {
   return "Email ou senha incorretos";
 }
 
-export async function loginAction(data: LoginSchema) {
-  const parsed = loginSchema.safeParse(data);
+// Assinatura (prevState, formData) exigida pelo useActionState do React para
+// que o form funcione via <form action={...}> nativo (progressive enhancement:
+// sem JS, o browser faz um POST normal e esta action roda no servidor).
+export async function loginAction(
+  _prevState: LoginActionState,
+  formData: FormData,
+): Promise<LoginActionState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
 
   if (!parsed.success) {
-    return DataBaseResponse.error({
-      code: "VALIDATION_ERROR",
-      message: "Dados inválidos",
-    }).serialize();
+    return { success: false, errorMessage: "Dados inválidos" };
   }
+
+  let destino: string;
 
   try {
     await signIn("credentials", {
@@ -53,39 +66,30 @@ export async function loginAction(data: LoginSchema) {
     });
 
     const usuario = await userService.recuperarUsuarioLogin(parsed.data.email);
+    const retorno = formData.get("retorno");
 
-    return DataBaseResponse.success({
-      success: true,
-    }).serialize({
-      redirectTo: getPerfilInicialPath({
-        isAdmin: usuario?.isAdmin,
-      }),
-    });
+    destino =
+      typeof retorno === "string" && retorno.startsWith("/")
+        ? retorno
+        : getPerfilInicialPath({ isAdmin: usuario?.isAdmin });
   } catch (error) {
     if (error instanceof AuthError) {
       const code = getAuthErrorCode(error);
       const message = getLoginErrorMessage(code);
 
       if (code === "EMAIL_NAO_VERIFICADO") {
-        return DataBaseResponse.error({
-          code,
-          message,
-        }).serialize({
-          redirectTo: "/login/verificar-email",
-        });
+        redirect("/login/verificar-email");
       }
 
-      return DataBaseResponse.error({
-        code,
-        message,
-      }).serialize();
+      return { success: false, errorMessage: message };
     }
 
     logger.error(error);
 
-    return DataBaseResponse.error({
-      code: "LOGIN_ERROR",
-      message: "Erro ao realizar login",
-    }).serialize();
+    return { success: false, errorMessage: "Erro ao realizar login" };
   }
+
+  // Fora do try/catch: redirect() lança um erro especial que não pode ser
+  // capturado pelo catch acima, senão o redirecionamento nunca acontece.
+  redirect(destino);
 }

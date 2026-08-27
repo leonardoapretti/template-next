@@ -1,54 +1,25 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useActionState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "./actions";
-import { type LoginSchema, loginSchema } from "./schema";
 
 export function LoginForm({ retorno }: { retorno?: string }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [state, formAction, pending] = useActionState(loginAction, null);
+  const lastToastedError = useRef<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginSchema>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(data: LoginSchema) {
-    setError(null);
-
-    const result = await loginAction(data);
-
-    if (!result?.success) {
-      const message = result?.errorMessage ?? "Erro ao realizar login.";
-
-      if (result?.redirectTo) {
-        toast.error(message);
-        return router.push(result.redirectTo);
-      }
-
-      toast.error(message);
-      setError(message);
-      return;
+  useEffect(() => {
+    if (state?.errorMessage && state.errorMessage !== lastToastedError.current) {
+      lastToastedError.current = state.errorMessage;
+      toast.error(state.errorMessage);
     }
+  }, [state]);
 
-    router.push(retorno?.startsWith("/") ? retorno : (result.redirectTo ?? "/"));
-  }
   return (
     <div className="w-100 max-w-sm">
       {/* Cabeçalho */}
@@ -60,7 +31,9 @@ export function LoginForm({ retorno }: { retorno?: string }) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form action={formAction} className="space-y-6">
+        <input type="hidden" name="retorno" value={retorno ?? ""} />
+
         {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
@@ -72,17 +45,14 @@ export function LoginForm({ retorno }: { retorno?: string }) {
 
             <Input
               id="email"
+              name="email"
               type="email"
               autoComplete="username"
               placeholder="seu@email.com"
               className="h-11 pl-9 text-sm"
-              {...register("email")}
+              required
             />
           </div>
-
-          {errors.email && (
-            <p className="pt-0.5 text-xs text-destructive">{errors.email.message}</p>
-          )}
         </div>
 
         {/* Senha */}
@@ -102,29 +72,26 @@ export function LoginForm({ retorno }: { retorno?: string }) {
 
             <Input
               id="password"
+              name="password"
               type="password"
               autoComplete="current-password"
               placeholder="••••••••"
               className="h-11 pl-9 text-sm"
-              {...register("password")}
+              required
             />
           </div>
-
-          {errors.password && (
-            <p className="pt-0.5 text-xs text-destructive">{errors.password.message}</p>
-          )}
         </div>
 
         {/* Erro geral */}
-        {error && (
+        {state?.errorMessage && (
           <div className="rounded-md bg-destructive/10 px-4 py-3">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{state.errorMessage}</p>
           </div>
         )}
 
         {/* Submit */}
-        <Button type="submit" disabled={isSubmitting} className="mt-2 h-11 w-full">
-          {isSubmitting ? "Entrando..." : "Entrar"}
+        <Button type="submit" disabled={pending} className="mt-2 h-11 w-full">
+          {pending ? "Entrando..." : "Entrar"}
         </Button>
       </form>
 
