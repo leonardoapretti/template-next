@@ -41,15 +41,15 @@ services:
       TZ: America/Sao_Paulo
 
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
     ports:
       - "3000:3000"
 
-  mysql:
-    image: mysql:8.4
-    container_name: template-next-mysql
+  postgres:
+    image: postgres:17
+    container_name: template-next-postgres
     restart: unless-stopped
 
     logging:
@@ -59,24 +59,23 @@ services:
         max-file: "3"
 
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       TZ: America/Sao_Paulo
 
     ports:
-      - "3306:3306"
+      - "5435:5432"
 
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d $${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
 volumes:
-  mysql_data:
+  postgres_data:

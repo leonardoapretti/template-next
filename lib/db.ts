@@ -1,4 +1,4 @@
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import { env } from "./env";
 import { AUDITADOS, montarAuditLog } from "./services/audit-log-extension";
@@ -11,18 +11,18 @@ const globalForPrisma = globalThis as unknown as {
 // O adapter só pode ser criado dentro do `??`: em dev, o HMR reavalia este
 // módulo a cada hot-reload, e como globalForPrisma.prisma já existe nas
 // reavaliações seguintes, criar o adapter fora do `??` abriria um pool novo
-// de conexões (connectionLimit: 10) a cada reload sem nunca fechá-lo,
-// vazando conexões até esgotar o max_connections do MySQL.
+// de conexões (max: 10) a cada reload sem nunca fechá-lo, vazando conexões
+// até esgotar o max_connections do Postgres.
 const basePrisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaMariaDb({
+    adapter: new PrismaPg({
       host: env.DB_HOST,
       port: Number(env.DB_PORT),
       user: env.DB_USER,
       password: env.DB_PASSWORD,
       database: env.DB_NAME,
-      connectionLimit: 10,
+      max: 10,
     }),
     log: env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
