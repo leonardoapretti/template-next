@@ -17,6 +17,20 @@ enum ActionTokenTipo {
   ALTERACAO_EMAIL
 }
 
+enum FrequenciaEvento {
+  NENHUMA
+  DIARIA
+  SEMANAL
+  MENSAL
+  ANUAL
+}
+
+enum StatusExcecaoEvento {
+  ALTERADO
+  REMARCADO
+  CANCELADO
+}
+
 // ─────────────────────────────────────────────
 // USER
 // ─────────────────────────────────────────────
@@ -38,6 +52,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   actionTokens ActionToken[]
+  eventos      Evento[]
 
   @@index([roleId])
   @@map("users")
@@ -62,6 +77,62 @@ model Role {
   usuarios User[]
 
   @@map("roles")
+}
+
+// ─────────────────────────────────────────────
+// AGENDA
+// ─────────────────────────────────────────────
+
+// Evento de agenda de um usuário. data/horaInicio/horaFim ficam em campos de
+// texto (não DateTime) para permitir recorrência e exceções por ocorrência
+// sem depender de fuso horário — a expansão das ocorrências dentro de uma
+// janela de datas acontece em app/dashboard/agenda/_components/engine.
+model Evento {
+  id             String           @id @default(cuid())
+  titulo         String
+  data           String
+  horaInicio     String
+  horaFim        String
+  recorrencia    FrequenciaEvento @default(NENHUMA)
+  recorrenciaAte String?
+  observacao     String?          @db.Text
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  excecoes EventoExcecao[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([data])
+  @@index([recorrencia])
+  @@map("eventos")
+}
+
+// Exceção a uma ocorrência específica de um evento recorrente: permite
+// alterar, remarcar ou cancelar apenas aquela data sem afetar as demais.
+model EventoExcecao {
+  id           String              @id @default(cuid())
+  eventoId     String
+  evento       Evento              @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dataOriginal String
+  status       StatusExcecaoEvento
+
+  titulo     String?
+  data       String?
+  horaInicio String?
+  horaFim    String?
+  observacao String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventoId, dataOriginal])
+  @@index([eventoId])
+  @@index([dataOriginal])
+  @@map("eventos_excecoes")
 }
 
 // ─────────────────────────────────────────────

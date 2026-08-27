@@ -65,6 +65,12 @@ export default async function DashboardPage() {
           description="Referência do padrão components/pages/detalhes, com header rico, seções e sidebar responsiva."
           href="/dashboard/produtos/exemplo"
         />
+        <PageCardLink
+          label="Agenda"
+          title="Calendário de eventos"
+          description="Visões de mês, semana e dia com eventos recorrentes, exceções e detecção de conflito, protegida pelo motor de permissões (agenda:create/update/delete)."
+          href="/dashboard/agenda"
+        />
       </PageGrid>
     </PageShell>
   );

@@ -1,0 +1,193 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { assertCurrentUserCan } from "@/lib/access-control";
+import { agendamentoService } from "@/lib/services/agendamento.service";
+import { DataBaseResponse } from "@/lib/services/config/database-response";
+import { getEventosNaJanela } from "./agendamento.queries";
+import { expandirEventosNaJanela } from "./expandir-recorrencias";
+
+const janelaAgendaSchema = z.object({
+  inicio: z.string().min(1),
+  fim: z.string().min(1),
+});
+
+const criarEventoSchema = z
+  .object({
+    titulo: z.string().trim().optional(),
+    data: z.string().min(1),
+    horaInicio: z.string().min(1),
+    horaFim: z.string().min(1),
+    recorrencia: z.enum(["NENHUMA", "DIARIA", "SEMANAL", "MENSAL", "ANUAL"]),
+    recorrenciaAte: z.string().optional(),
+    observacao: z.string().optional(),
+    confirmarConflito: z.boolean().optional(),
+  })
+  .refine((data) => data.horaInicio < data.horaFim, {
+    path: ["horaFim"],
+    message: "O horário final deve ser maior que o inicial.",
+  });
+
+function normalizarTituloEvento(input: z.infer<typeof criarEventoSchema>) {
+  return input.titulo?.trim() || "Sem título";
+}
+
+const atualizarEventoSchema = criarEventoSchema.extend({
+  id: z.string().min(1),
+  dataOriginal: z.string().optional(),
+  escopoRecorrencia: z.enum(["ESTE", "DAQUI_PRA_FRENTE"]).optional(),
+});
+
+const excluirEventoSchema = z.object({
+  id: z.string().min(1),
+  dataOriginal: z.string().optional(),
+  escopoRecorrencia: z.enum(["ESTE", "DAQUI_PRA_FRENTE"]).optional(),
+});
+
+function revalidarAgenda() {
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agenda");
+}
+
+// ─────────────────────────────────────────────────────────────
+// READ
+// ─────────────────────────────────────────────────────────────
+
+export async function getOcorrenciasAction(input: unknown) {
+  const parsed = janelaAgendaSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return DataBaseResponse.error({
+      code: "VALIDATION_ERROR",
+      message: "Janela do calendário inválida.",
+    }).serialize();
+  }
+
+  const response = await DataBaseResponse.fromPromise(async () => {
+    const eventos = await getEventosNaJanela(parsed.data);
+    return expandirEventosNaJanela(eventos, parsed.data);
+  });
+
+  return response.serialize();
+}
+
+export async function criarEventoAction(input: unknown) {
+  const ctx = await assertCurrentUserCan("agenda:create");
+
+  const parsed = criarEventoSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      type: "validation_error" as const,
+      message: "Dados do evento inválidos.",
+    };
+  }
+
+  const data = {
+    ...parsed.data,
+    titulo: normalizarTituloEvento(parsed.data),
+  };
+
+  const conflitos = await agendamentoService.listarConflitosNoHorario(ctx.usuarioId, data);
+
+  if (conflitos.length > 0 && !data.confirmarConflito) {
+    return {
+      success: false as const,
+      type: "conflict" as const,
+      conflitos,
+    };
+  }
+
+  const response = await DataBaseResponse.fromPromise(async () => {
+    await agendamentoService.criarEvento(ctx.usuarioId, data);
+    return null;
+  });
+
+  if (!response.success) {
+    return {
+      success: false as const,
+      type: "server_error" as const,
+      message: response.getErrorMessage() || "Não foi possível criar o evento.",
+    };
+  }
+
+  revalidarAgenda();
+
+  return {
+    success: true as const,
+  };
+}
+
+export async function atualizarEventoAction(input: unknown) {
+  const ctx = await assertCurrentUserCan("agenda:update");
+
+  const parsed = atualizarEventoSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      type: "validation_error" as const,
+      message: "Dados do evento inválidos.",
+    };
+  }
+
+  const data = {
+    ...parsed.data,
+    titulo: normalizarTituloEvento(parsed.data),
+  };
+
+  const conflitos = await agendamentoService.listarConflitosNoHorario(ctx.usuarioId, data);
+
+  if (conflitos.length > 0 && !data.confirmarConflito) {
+    return {
+      success: false as const,
+      type: "conflict" as const,
+      conflitos,
+    };
+  }
+
+  const response = await DataBaseResponse.fromPromise(async () => {
+    await agendamentoService.atualizarEvento(ctx.usuarioId, data);
+    return null;
+  });
+
+  if (!response.success) {
+    return {
+      success: false as const,
+      type: "server_error" as const,
+      message: response.getErrorMessage() || "Não foi possível atualizar o evento.",
+    };
+  }
+
+  revalidarAgenda();
+
+  return {
+    success: true as const,
+  };
+}
+
+export async function excluirEventoAction(input: unknown) {
+  const ctx = await assertCurrentUserCan("agenda:delete");
+
+  const parsed = excluirEventoSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false as const,
+      message: "Evento inválido.",
+    };
+  }
+
+  const response = await DataBaseResponse.fromPromise(async () => {
+    await agendamentoService.excluirEvento(ctx.usuarioId, parsed.data);
+    return null;
+  });
+
+  if (response.success) {
+    revalidarAgenda();
+  }
+
+  return response.serialize();
+}
