@@ -34,9 +34,9 @@ export function NavMain({
 }) {
   const router = useRouter();
 
-  const { setOpenMobile, state } = useSidebar();
+  const { setOpenMobile, state, isMobile } = useSidebar();
 
-  const isCollapsed = state === "collapsed";
+  const isCollapsed = !isMobile && state === "collapsed";
 
   return (
     <SidebarGroup>

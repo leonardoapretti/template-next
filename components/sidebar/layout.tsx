@@ -36,16 +36,16 @@ export default async function SidebarLayout({
           <SidebarInset>
             <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/85 px-4 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 print:hidden">
               <div className="flex min-w-0 items-center gap-2">
-                <SidebarTrigger className="-ml-1" />
+                <SidebarTrigger className="-ml-1 hidden md:flex" />
                 <Separator
                   orientation="vertical"
-                  className="mr-2 shrink-0 data-vertical:h-4 data-vertical:self-auto"
+                  className="mr-2 hidden shrink-0 data-vertical:h-4 data-vertical:self-auto md:block"
                 />
                 <AppBreadcrumb />
               </div>
             </header>
 
-            <main className="flex flex-1 flex-col bg-background">{children}</main>
+            <main className="flex flex-1 flex-col bg-background pb-16 md:pb-0">{children}</main>
           </SidebarInset>
         )}
       </BreadcrumbLabelsProvider>

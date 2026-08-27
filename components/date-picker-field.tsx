@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type DatePickerFieldProps = {
   value?: string; // yyyy-MM-dd
@@ -159,6 +160,8 @@ export function DateRangePickerField({
   placeholder = "Selecionar período",
   disabled,
 }: DateRangePickerFieldProps) {
+  const isMobile = useIsMobile();
+
   const selectedRange = useMemo<DateRange | undefined>(() => {
     const from = parseInputDate(value?.from);
     const to = parseInputDate(value?.to);
@@ -207,7 +210,7 @@ export function DateRangePickerField({
           onSelect={handleCalendarSelect}
           captionLayout="dropdown"
           defaultMonth={selectedRange?.from}
-          numberOfMonths={2}
+          numberOfMonths={isMobile ? 1 : 2}
         />
       </PopoverContent>
     </Popover>

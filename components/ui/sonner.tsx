@@ -38,6 +38,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description: "!text-muted-foreground",
         },
       }}
+      mobileOffset={{ bottom: "calc(4rem + env(safe-area-inset-bottom) + 1rem)" }}
       {...props}
     />
   );

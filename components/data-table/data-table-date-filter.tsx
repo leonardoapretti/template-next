@@ -6,6 +6,7 @@ import type { Column } from "@tanstack/react-table";
 import { CalendarIcon, XCircle } from "lucide-react";
 import { type MouseEvent, useCallback, useMemo } from "react";
 import type { DateRange } from "react-day-picker";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatarDataBr } from "@/lib/utils/data";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
@@ -56,6 +57,7 @@ export function DataTableDateFilter<TData>({
   title,
   multiple,
 }: DataTableDateFilterProps<TData>) {
+  const isMobile = useIsMobile();
   const columnFilterValue = column.getFilterValue();
 
   const selectedDates = useMemo<DateSelection>(() => {
@@ -190,7 +192,7 @@ export function DataTableDateFilter<TData>({
         {multiple ? (
           <Calendar
             mode="range"
-            numberOfMonths={2}
+            numberOfMonths={isMobile ? 1 : 2}
             onSelect={onSelect}
             selected={
               getIsDateRange(selectedDates) ? selectedDates : { from: undefined, to: undefined }
