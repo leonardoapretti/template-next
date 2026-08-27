@@ -1,12 +1,12 @@
-import bcrypt from "bcryptjs";
-import { headers } from "next/headers";
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { auditLogService } from "@/lib/services/audit-log.service";
 import { userService } from "@/lib/services/user.service";
 import { verificarRateLimit } from "@/lib/utils/rate-limit";
 import { getDadosAuditoriaAssinatura } from "@/lib/utils/request";
+import bcrypt from "bcryptjs";
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { headers } from "next/headers";
 import { EmailNaoVerificadoError, RateLimitExcedidoError } from "./auth-errors";
 
 const SESSION_MAX_AGE_SECONDS = 7200; // 2 horas
@@ -101,6 +101,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+
+  // Necessário para acessar a aplicação por um host diferente de AUTH_URL
+  // (ex.: IP da rede local no celular). Sem isso o Auth.js recusa a
+  // requisição com UntrustedHost, que a action de login mostra como
+  // "Email ou senha incorretos" mesmo com credenciais corretas.
+  trustHost: process.env.NODE_ENV === "development",
 
   pages: {
     signIn: "/login",

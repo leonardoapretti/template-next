@@ -27,6 +27,8 @@ const withMDX = createMDX({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  // Permite acessar o dev server pelo IP da rede local (ex.: testes no celular).
+  allowedDevOrigins: ["192.168.1.40"],
 };
 
 export default withSerwist(withMDX(nextConfig));
