@@ -6,6 +6,7 @@ export function createContext(overrides: ContextOverrides = {}): AccessContext {
   return {
     usuarioId: overrides.usuarioId ?? "user-1",
     isAdmin: overrides.isAdmin ?? false,
+    permissoes: overrides.permissoes ?? [],
   };
 }
 

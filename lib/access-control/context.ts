@@ -5,6 +5,7 @@ import { AuthenticationRequiredError } from "./errors";
 export type AccessContext = {
   usuarioId: string;
   isAdmin: boolean;
+  permissoes: string[];
 };
 
 export async function getAccessContext(): Promise<AccessContext> {
@@ -22,6 +23,11 @@ export async function getAccessContext(): Promise<AccessContext> {
     select: {
       id: true,
       isAdmin: true,
+      role: {
+        select: {
+          permissoes: true,
+        },
+      },
     },
   });
 
@@ -32,5 +38,6 @@ export async function getAccessContext(): Promise<AccessContext> {
   return {
     usuarioId: usuario.id,
     isAdmin: usuario.isAdmin,
+    permissoes: usuario.role?.permissoes ?? [],
   };
 }

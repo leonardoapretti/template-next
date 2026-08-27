@@ -31,12 +31,37 @@ model User {
   isAdmin         Boolean   @default(false)
   nome            String
 
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   actionTokens ActionToken[]
 
+  @@index([roleId])
   @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// ACCESS CONTROL
+// ─────────────────────────────────────────────
+
+// Perfil de acesso: concede um conjunto de permissões granulares por
+// recurso e ação (ex.: "usuarios:create", "usuarios:delete") aos usuários
+// vinculados a ele. Usuários com isAdmin=true ignoram este model e têm
+// acesso irrestrito (ver lib/access-control/policy.ts).
+model Role {
+  id          String   @id @default(cuid())
+  nome        String   @unique
+  permissoes String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios User[]
+
+  @@map("roles")
 }
 
 // ─────────────────────────────────────────────
