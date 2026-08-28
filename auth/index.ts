@@ -102,11 +102,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 
-  // Necessário para acessar a aplicação por um host diferente de AUTH_URL
-  // (ex.: IP da rede local no celular). Sem isso o Auth.js recusa a
-  // requisição com UntrustedHost, que a action de login mostra como
-  // "Email ou senha incorretos" mesmo com credenciais corretas.
-  trustHost: process.env.NODE_ENV === "development",
+  // Sempre `true`: o Auth.js só define isso automaticamente em plataformas
+  // que reconhece (ex.: Vercel). Em self-hosting atrás de reverse proxy
+  // (nosso caso em produção, Docker + Caddy/edge-proxy) ele não tem como
+  // saber que confia no host, e `assertConfig` lança UntrustedHost em toda
+  // requisição sem isso — não é uma checagem condicional de host divergente,
+  // é incondicional quando `trustHost` é false. Sem essa flag, o login
+  // "funciona" (o cookie é setado), mas a checagem seguinte (proxy.ts, que
+  // roda `auth()` em toda rota) falha silenciosamente e volta pro /login.
+  trustHost: true,
 
   pages: {
     signIn: "/login",
