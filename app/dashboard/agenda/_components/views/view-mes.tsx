@@ -3,9 +3,11 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import { useAgenda } from "@/components/sidebar/sidebar-agenda/agenda-context";
-import { DIAS_SEMANA_ABREV, getDiasDoMes, proximoHorarioPadrao } from "@/lib/utils/data";
+import { DIAS_SEMANA_ABREV, getDiasDoMes } from "@/lib/utils/data";
 import { LoadingBar } from "../chip-ocorrencia";
+import { DiaDetalheDialog } from "../dia-detalhe-dialog";
 import { janelaDoMes } from "../engine/agenda-janela";
+import type { OcorrenciaAgendamento } from "../engine/agendamento.types";
 import { chaveData } from "../engine/chave-data";
 import { montarDraftDetalhesEvento } from "../engine/evento-dialog-draft";
 import { agruparPorData, ehOcorrenciaDeBarra } from "../engine/expandir-recorrencias";
@@ -26,8 +28,16 @@ function chunk<T>(items: T[], size: number): T[][] {
 export function ViewMes() {
   const searchParams = useSearchParams();
   const eventoAbertoRef = useRef<string | null>(null);
-  const { selectedDate, setSelectedDate, abrirNovoEvento, abrirDetalhesEvento, abrirEditarEvento } =
-    useAgenda();
+  const {
+    selectedDate,
+    setSelectedDate,
+    abrirNovoEvento,
+    abrirDetalhesEvento,
+    abrirEditarEvento,
+    diaDetalhe,
+    abrirDiaDetalhe,
+    fecharDiaDetalhe,
+  } = useAgenda();
   const ano = selectedDate.getFullYear();
   const mes = selectedDate.getMonth();
   const dias = getDiasDoMes(ano, mes);
@@ -45,6 +55,14 @@ export function ViewMes() {
     () => semanas.map((semana) => layoutFaixaDias(semana, ocorrencias)),
     [semanas, ocorrencias],
   );
+
+  const ocorrenciasDoDiaDetalhe = useMemo(() => {
+    if (!diaDetalhe) return [];
+
+    return ocorrencias
+      .filter((oc) => oc.data <= diaDetalhe && oc.dataFim >= diaDetalhe)
+      .sort((a, b) => (a.horaInicio ?? "").localeCompare(b.horaInicio ?? ""));
+  }, [diaDetalhe, ocorrencias]);
 
   const eventoIdParam = searchParams.get("eventoId");
   const dataParam = searchParams.get("data");
@@ -123,18 +141,31 @@ export function ViewMes() {
             layout={layoutsPorSemana[indice]}
             porDataChips={porDataChips}
             selectedDate={selectedDate}
-            onSelecionarDia={setSelectedDate}
-            onCriarEvento={(date) => {
-              const horaInicio = proximoHorarioPadrao();
-              abrirNovoEvento({
-                data: chaveData(date),
-                dataFim: chaveData(date),
-                horaInicio,
-              });
+            onClickDia={(date) => {
+              setSelectedDate(date);
+              abrirDiaDetalhe(chaveData(date));
             }}
           />
         ))}
       </div>
+
+      <DiaDetalheDialog
+        open={diaDetalhe !== null}
+        onOpenChange={(open) => !open && fecharDiaDetalhe()}
+        data={diaDetalhe}
+        ocorrencias={ocorrenciasDoDiaDetalhe}
+        onSelecionarEvento={(oc: OcorrenciaAgendamento) => {
+          fecharDiaDetalhe();
+          abrirDetalhesEvento(montarDraftDetalhesEvento(oc));
+        }}
+        onNovoEvento={() => {
+          const data = diaDetalhe;
+          fecharDiaDetalhe();
+          if (data) {
+            abrirNovoEvento({ data, dataFim: data });
+          }
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAgenda } from "@/components/sidebar/sidebar-agenda/agenda-context";
 import type { DiaGrade } from "@/lib/utils/data";
 import { cn } from "@/lib/utils/tailwind";
 import { BarraEventoMes } from "./barra-evento-mes";
@@ -16,8 +17,7 @@ interface SemanaMesProps {
   layout: LayoutFaixaDias;
   porDataChips: Map<string, OcorrenciaAgendamento[]>;
   selectedDate: Date;
-  onSelecionarDia: (date: Date) => void;
-  onCriarEvento: (date: Date) => void;
+  onClickDia: (date: Date) => void;
 }
 
 export function SemanaMes({
@@ -25,9 +25,10 @@ export function SemanaMes({
   layout,
   porDataChips,
   selectedDate,
-  onSelecionarDia,
-  onCriarEvento,
+  onClickDia,
 }: SemanaMesProps) {
+  const { abrirDiaDetalhe } = useAgenda();
+
   return (
     <div
       className="grid flex-1 grid-cols-7 border-b"
@@ -44,15 +45,8 @@ export function SemanaMes({
             // biome-ignore lint/suspicious/noArrayIndexKey: coluna é estável (0-6) dentro da semana
             key={coluna}
             type="button"
-            aria-label={isSelecionado ? "Criar evento neste dia" : "Selecionar este dia"}
-            onClick={() => {
-              if (isSelecionado) {
-                onCriarEvento(dia.date);
-                return;
-              }
-
-              onSelecionarDia(dia.date);
-            }}
+            aria-label="Ver eventos deste dia"
+            onClick={() => onClickDia(dia.date)}
             className={cn(
               "border-r text-left transition-colors hover:bg-accent/50",
               !dia.mesAtual && "bg-muted/20",
@@ -80,7 +74,11 @@ export function SemanaMes({
       ))}
 
       {layout.barras.map((barra) => (
-        <BarraEventoMes key={barra.oc.id} barra={barra} />
+        <BarraEventoMes
+          key={barra.oc.id}
+          barra={barra}
+          onClick={() => abrirDiaDetalhe(barra.oc.data)}
+        />
       ))}
 
       {semana.map((dia, coluna) => {

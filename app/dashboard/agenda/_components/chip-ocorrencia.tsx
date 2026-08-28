@@ -4,7 +4,6 @@ import { useAgenda } from "@/components/sidebar/sidebar-agenda/agenda-context";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils/tailwind";
 import type { OcorrenciaAgendamento } from "./engine/agendamento.types";
-import { montarDraftDetalhesEvento } from "./engine/evento-dialog-draft";
 import { corEvento, rotuloEvento } from "./timeline-estilo";
 
 // ─────────────────────────────────────────────────────────────
@@ -45,9 +44,9 @@ interface ChipOcorrenciaProps {
 }
 
 export function ChipOcorrencia({ oc }: ChipOcorrenciaProps) {
-  const { abrirDetalhesEvento } = useAgenda();
+  const { abrirDiaDetalhe } = useAgenda();
 
-  return <BotaoChip oc={oc} onClick={() => abrirDetalhesEvento(montarDraftDetalhesEvento(oc))} />;
+  return <BotaoChip oc={oc} onClick={() => abrirDiaDetalhe(oc.data)} />;
 }
 
 // ─────────────────────────────────────────────────────────────

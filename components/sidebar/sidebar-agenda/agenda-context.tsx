@@ -32,6 +32,10 @@ interface AgendaContextValue {
   abrirDetalhesEvento: (draft: EventoDialogDraft) => void;
   abrirEditarEvento: (draft: EventoDialogDraft) => void;
   fecharEventoDialog: () => void;
+  /** Data ("YYYY-MM-DD") cujo diálogo de "eventos do dia" (visão mês) está aberto. */
+  diaDetalhe: string | null;
+  abrirDiaDetalhe: (data: string) => void;
+  fecharDiaDetalhe: () => void;
 }
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
@@ -40,6 +44,7 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<AgendaView>("mes");
   const [eventoDialogDraft, setEventoDialogDraft] = useState<EventoDialogDraft | null>(null);
+  const [diaDetalhe, setDiaDetalhe] = useState<string | null>(null);
 
   const navegarAnterior = useCallback(() => {
     setSelectedDate((prev) => {
@@ -102,6 +107,14 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
     setEventoDialogDraft(null);
   }, []);
 
+  const abrirDiaDetalhe = useCallback((data: string) => {
+    setDiaDetalhe(data);
+  }, []);
+
+  const fecharDiaDetalhe = useCallback(() => {
+    setDiaDetalhe(null);
+  }, []);
+
   return (
     <AgendaContext.Provider
       value={{
@@ -116,6 +129,9 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
         abrirDetalhesEvento,
         abrirEditarEvento,
         fecharEventoDialog,
+        diaDetalhe,
+        abrirDiaDetalhe,
+        fecharDiaDetalhe,
       }}
     >
       {children}

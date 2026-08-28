@@ -12,9 +12,11 @@ interface BarraEventoMesProps {
   barra: BarraPosicionada;
   /** Linha do grid (1-based) em que a linha 0 do layout deve começar. */
   linhaBase?: number;
+  /** Sobrescreve o clique padrão (abrir detalhes direto) — usado na visão mês pra abrir a lista do dia. */
+  onClick?: () => void;
 }
 
-export function BarraEventoMes({ barra, linhaBase = 2 }: BarraEventoMesProps) {
+export function BarraEventoMes({ barra, linhaBase = 2, onClick }: BarraEventoMesProps) {
   const { abrirDetalhesEvento } = useAgenda();
   const { oc, colInicio, colFim, linha } = barra;
 
@@ -23,7 +25,7 @@ export function BarraEventoMes({ barra, linhaBase = 2 }: BarraEventoMesProps) {
       type="button"
       onClick={(event) => {
         event.stopPropagation();
-        abrirDetalhesEvento(montarDraftDetalhesEvento(oc));
+        onClick ? onClick() : abrirDetalhesEvento(montarDraftDetalhesEvento(oc));
       }}
       className={cn(
         "relative z-10 truncate rounded px-1.5 text-left text-[10px] font-medium leading-none",
