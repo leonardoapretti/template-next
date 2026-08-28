@@ -190,21 +190,22 @@ A documentação completa de cada serviço (autenticação, RBAC, criptografia, 
 
 ## Docker
 
-### Aplicação + banco (produção, sem HTTPS)
+### Produção (VPS)
+
+Em produção o app **não** usa o serviço `postgres` deste `docker-compose.yml` (esse é só pro dev local) — conecta no Postgres compartilhado da VPS (`shared-postgres`, repo `postgres-vps`) pela rede Docker externa `db`. O override `docker-compose.prod.yml` cuida disso e o `scripts/deploy.sh` sobe só o serviço `app`:
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d app
 ```
 
-Ajuste `DB_HOST`/`DATABASE_URL` no `.env` para `mysql` (nome do serviço na rede Docker) antes de subir nesse modo.
-
-### Produção com HTTPS (VPS)
-
-Use o override `docker-compose.prod.yml`, que adiciona um reverse proxy [Caddy](https://caddyserver.com) com TLS automático:
+Antes do primeiro deploy, crie a database e o usuário do app dentro do `postgres-vps` (script idempotente, pode rodar de novo sem duplicar nada):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+cd /var/www/postgres-vps
+./scripts/create-database.sh template_next template_next <senha>
 ```
+
+E preencha no `.env` da VPS: `DB_HOST=shared-postgres`, `DB_PORT=5432`, `DB_USER`/`DB_PASSWORD`/`DB_NAME` conforme criado acima, e `DATABASE_URL=postgresql://<usuario>:<senha>@shared-postgres:5432/<database>`.
 
 O container da aplicação aplica as migrations pendentes (`prisma migrate deploy`) automaticamente antes de iniciar — não é necessário rodar nenhum comando manual pós-deploy.
 

@@ -4,14 +4,19 @@ services:
     ports: !reset []
     expose:
       - "3000"
+    # Em produção o app não usa o Postgres do serviço `postgres` deste
+    # compose (esse é só pro dev local) — conecta no shared-postgres da VPS
+    # pela rede externa `db` (ver ~/postgres-vps no host). deploy.sh sobe
+    # só o serviço `app`, então o `postgres` local nunca é iniciado aqui.
+    depends_on: !reset {}
     networks:
       - default
       - web
-
-  mysql:
-    ports: !reset []
+      - db
 
 networks:
   default:
   web:
+    external: true
+  db:
     external: true

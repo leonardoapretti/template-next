@@ -38,10 +38,7 @@ cd "$PROJECT_DIR"
 log "Buildando imagem..."
 $COMPOSE build --progress=plain app
 
-log "Subindo containers..."
-$COMPOSE up -d
-
-log "Garantindo aplicação atualizada..."
+log "Subindo aplicação..."
 $COMPOSE up -d app
 
 log "Status dos containers..."
