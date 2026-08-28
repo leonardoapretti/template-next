@@ -165,7 +165,7 @@ export default async function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/admin/emails"
+              href="/dashboard/emails"
             >
               <h3 className="font-semibold">Envio de e-mail (admin)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -183,7 +183,7 @@ export default async function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/admin/docs"
+              href="/dashboard/docs"
             >
               <h3 className="font-semibold">Documentação (protegida)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">

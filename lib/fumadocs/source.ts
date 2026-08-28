@@ -13,5 +13,5 @@ export function createDocsSource(baseUrl: string) {
 // Documentação pública (/docs).
 export const source = createDocsSource("/docs");
 
-// Mesmo conteúdo, servido na área administrativa protegida (/admin/docs).
-export const adminSource = createDocsSource("/admin/docs");
+// Mesmo conteúdo, servido dentro do dashboard autenticado, restrito a admins (/dashboard/docs).
+export const adminSource = createDocsSource("/dashboard/docs");
