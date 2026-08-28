@@ -50,10 +50,11 @@ const data = {
 };
 
 export function AdminSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
+  // Início e Menu fixos nas pontas, E-mails em destaque no centro (ação mais
+  // usada no admin). Documentação continua acessível pelo Menu (NavMain).
   const bottomNavItems: React.ComponentProps<typeof SidebarBottomNav>["items"] = [
     { title: "Início", url: "/admin", icon: <Home /> },
-    { title: "Documentação", url: "/admin/docs", icon: <BookOpen /> },
-    { title: "E-mails", url: "/admin/emails", icon: <MailIcon /> },
+    { title: "E-mails", url: "/admin/emails", icon: <MailIcon />, highlight: true },
     { title: "Menu", menuTrigger: true, icon: <MenuIcon /> },
   ];
 

@@ -1,6 +1,12 @@
 "use client";
 
-import { CalendarDaysIcon, LayoutDashboardIcon, MenuIcon, ShieldIcon } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  LayoutDashboardIcon,
+  MenuIcon,
+  ShieldIcon,
+  UserIcon,
+} from "lucide-react";
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
 import type { AppSidebarProps } from "../interfaces";
 import { NavMain } from "../nav-main";
@@ -51,9 +57,14 @@ const navMainAdmin = [
 ];
 
 export function UserSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
+  // Início e Menu são fixos nas pontas; Agenda fica sempre em destaque no
+  // centro (é a funcionalidade principal do app). Conta só entra quando há
+  // um quarto destino real (isAdmin) pra manter a quantidade de botões ímpar
+  // com o centro simétrico — sem isso, forçar um botão sem destino real.
   const bottomNavItems: React.ComponentProps<typeof SidebarBottomNav>["items"] = [
     { title: "Início", url: "/dashboard", icon: <LayoutDashboardIcon /> },
-    { title: "Agenda", url: "/dashboard/agenda", icon: <CalendarDaysIcon /> },
+    ...(isAdmin ? [{ title: "Conta", url: "/dashboard/conta", icon: <UserIcon /> }] : []),
+    { title: "Agenda", url: "/dashboard/agenda", icon: <CalendarDaysIcon />, highlight: true },
     ...(isAdmin ? [{ title: "Admin", url: "/admin", icon: <ShieldIcon /> }] : []),
     { title: "Menu", menuTrigger: true, icon: <MenuIcon /> },
   ];
