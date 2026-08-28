@@ -10,6 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
+import { Button } from "./ui/button";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -36,7 +38,7 @@ export function UserNavIndicator({ name, email }: { name: string; email: string 
         {initials}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="w-full">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex flex-col gap-0.5 px-2 py-1.5 text-left text-sm">
@@ -45,6 +47,8 @@ export function UserNavIndicator({ name, email }: { name: string; email: string 
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <Button render={<Link href={"/dashboard"}>Acessar dashboard</Link>} variant={"secondary"} />
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<LogOutBtn />} />
       </DropdownMenuContent>

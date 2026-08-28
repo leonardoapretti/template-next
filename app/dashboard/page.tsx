@@ -1,7 +1,3 @@
-import { LayoutDashboardIcon } from "lucide-react";
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Suspense } from "react";
 import { auth } from "@/auth";
 import {
   PageCardLink,
@@ -12,6 +8,10 @@ import {
 } from "@/components/pages/page-shell";
 import { Button } from "@/components/ui/button";
 import { getAccessContext } from "@/lib/access-control";
+import { LayoutDashboardIcon } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
 import { AcessoNegadoToast } from "./_components/acesso-negado-toast";
 import { JaLogadoToast } from "./_components/ja-logado-toast";
 import { PromoverAdminButtonGate } from "./_components/promover-admin-button-gate";
@@ -70,6 +70,12 @@ export default async function DashboardPage() {
           title="Calendário de eventos"
           description="Visões de mês, semana e dia com eventos recorrentes, exceções e detecção de conflito, protegida pelo motor de permissões (agenda:create/update/delete)."
           href="/agenda"
+        />
+        <PageCardLink
+          label="Envio de e-mails"
+          title="Sistema de envio de e-mails"
+          description="Interface para criar, agendar e monitorar envios de e-mails, protegida pelo motor de permissões (email:create/update/delete)."
+          href="/dashboard/emails"
         />
       </PageGrid>
     </PageShell>
