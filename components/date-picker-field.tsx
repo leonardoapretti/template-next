@@ -173,7 +173,9 @@ export function DateRangePickerField({
 
   const displayValue =
     value?.from && value?.to
-      ? `${formatDisplayDate(value.from)} à ${formatDisplayDate(value.to)}`
+      ? value.from === value.to
+        ? formatDisplayDate(value.from)
+        : `${formatDisplayDate(value.from)} à ${formatDisplayDate(value.to)}`
       : value?.from
         ? `${formatDisplayDate(value.from)} à ...`
         : placeholder;
