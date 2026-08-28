@@ -168,6 +168,16 @@ A documentação da aplicação está disponível em `lib/fumadocs/content/docs`
 
 As actions da aplicação devem ser protegidas com o sistema de controle de acesso por conta das permissões e dos planos dispoíveis na aplicação
 
+## Orientações gerais
+
+Nunca adicionar co-autoria nos commits
+
+Verifique os componentes de ui disponíveis em /components
+
+Sempre que alterar alguma coisa faça o seguinte questionamento: isso é seguro?
+
+Preciso que sempre que possível as pages da aplicação sejam server-side. se um trecho de uma página necessitar ser client-side esse trecho deverá ser abstraído em outro arquivo, nunca transformar o arquivo inteiro em client-side por conta de um trecho específico.
+
 ## Resposta final
 
 A resposta final deve ser curta.
@@ -194,15 +204,15 @@ Inclua somente informações úteis para minha próxima decisão, como:
 Exemplo ideal:
 
 > Implementado.
-> 
+>
 > `pnpm typecheck` e `pnpm lint` passaram.
-> 
+>
 > Não foi necessário adicionar dependências.
 
 Ou, quando houver um problema:
 
 > Implementado.
-> 
+>
 > O typecheck da alteração passou. O lint geral continua falhando em `arquivo-x.ts` por um erro preexistente não relacionado a esta tarefa.
 
 <!-- BEGIN:nextjs-agent-rules -->
@@ -214,4 +224,3 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
-
