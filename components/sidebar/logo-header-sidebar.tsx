@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronsUpDownIcon, GalleryVerticalEndIcon, ShieldIcon, User } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  ChevronsUpDownIcon,
+  GalleryVerticalEndIcon,
+  ShieldIcon,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -17,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-type Perfil = "admin" | "usuario";
+type Perfil = "admin" | "usuario" | "agenda";
 
 type LogoEmpresaProps = {
   perfilAtual: Perfil;
@@ -27,6 +33,7 @@ type LogoEmpresaProps = {
 const perfilDescricao: Record<Perfil, string> = {
   admin: "Área administrativa",
   usuario: "Área do usuário",
+  agenda: "Agenda",
 };
 
 export function LogoEmpresa({ perfilAtual, isAdmin }: LogoEmpresaProps) {
@@ -72,6 +79,11 @@ export function LogoEmpresa({ perfilAtual, isAdmin }: LogoEmpresaProps) {
               <DropdownMenuItem render={<Link href="/dashboard" />} className="gap-2 p-2">
                 <User className="size-4" />
                 Usuário
+              </DropdownMenuItem>
+
+              <DropdownMenuItem render={<Link href="/agenda" />} className="gap-2 p-2">
+                <CalendarDaysIcon className="size-4" />
+                Agenda
               </DropdownMenuItem>
 
               {isAdmin && (

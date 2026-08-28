@@ -1,5 +1,5 @@
-import type { EventoRaw } from "@/app/dashboard/agenda/_components/engine/agendamento.types";
-import { expandirEventosNaJanela } from "@/app/dashboard/agenda/_components/engine/expandir-recorrencias";
+import type { EventoRaw } from "@/app/agenda/_components/engine/agendamento.types";
+import { expandirEventosNaJanela } from "@/app/agenda/_components/engine/expandir-recorrencias";
 import { db } from "../db";
 import { diaAnterior } from "../utils/data";
 

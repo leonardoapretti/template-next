@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  BookOpen,
-  CalendarDaysIcon,
-  LayoutDashboardIcon,
-  MailIcon,
-  MenuIcon,
-  ShieldIcon,
-  UserIcon,
-} from "lucide-react";
+import { CalendarDaysIcon, LayoutDashboardIcon, MenuIcon, ShieldIcon } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
 import type { AppSidebarProps } from "../interfaces";
 import { NavMain } from "../nav-main";
@@ -18,22 +10,10 @@ import NavbarHeader from "../sidebar-header";
 
 const navMain = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: <LayoutDashboardIcon />,
-    isActive: true,
-    items: [
-      {
-        title: "Início",
-        url: "/dashboard",
-      },
-    ],
-  },
-  {
     title: "Agenda",
     url: "/agenda",
     icon: <CalendarDaysIcon />,
-    isActive: false,
+    isActive: true,
     items: [
       {
         title: "Meus eventos",
@@ -41,33 +21,21 @@ const navMain = [
       },
     ],
   },
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: <LayoutDashboardIcon />,
+    isActive: false,
+    items: [
+      {
+        title: "Início",
+        url: "/dashboard",
+      },
+    ],
+  },
 ];
 
 const navMainAdmin = [
-  {
-    title: "Documentação",
-    url: "/dashboard/docs",
-    icon: <BookOpen />,
-    isActive: false,
-    items: [
-      {
-        title: "Base interna",
-        url: "/dashboard/docs",
-      },
-    ],
-  },
-  {
-    title: "E-mails",
-    url: "/dashboard/emails",
-    icon: <MailIcon />,
-    isActive: false,
-    items: [
-      {
-        title: "Enviar e-mail",
-        url: "/dashboard/emails",
-      },
-    ],
-  },
   {
     title: "Área admin",
     url: "/admin",
@@ -82,14 +50,9 @@ const navMainAdmin = [
   },
 ];
 
-export function UserSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
-  // Início e Menu são fixos nas pontas; Agenda fica sempre em destaque no
-  // centro (é a funcionalidade principal do app). Conta só entra quando há
-  // um quarto destino real (isAdmin) pra manter a quantidade de botões ímpar
-  // com o centro simétrico — sem isso, forçar um botão sem destino real.
+export function AgendaSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
   const bottomNavItems: React.ComponentProps<typeof SidebarBottomNav>["items"] = [
-    { title: "Início", url: "/dashboard", icon: <LayoutDashboardIcon /> },
-    ...(isAdmin ? [{ title: "Conta", url: "/dashboard/conta", icon: <UserIcon /> }] : []),
+    { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
     { title: "Agenda", url: "/agenda", icon: <CalendarDaysIcon />, highlight: true },
     ...(isAdmin ? [{ title: "Admin", url: "/admin", icon: <ShieldIcon /> }] : []),
     { title: "Menu", menuTrigger: true, icon: <MenuIcon /> },
@@ -98,7 +61,7 @@ export function UserSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
   return (
     <>
       <Sidebar collapsible="icon" {...props}>
-        <NavbarHeader perfilAtual="usuario" isAdmin={isAdmin} />
+        <NavbarHeader perfilAtual="agenda" isAdmin={isAdmin} />
 
         <SidebarContent>
           <NavMain items={isAdmin ? [...navMain, ...navMainAdmin] : navMain} label="Navegação" />

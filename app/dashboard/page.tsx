@@ -69,7 +69,7 @@ export default async function DashboardPage() {
           label="Agenda"
           title="Calendário de eventos"
           description="Visões de mês, semana e dia com eventos recorrentes, exceções e detecção de conflito, protegida pelo motor de permissões (agenda:create/update/delete)."
-          href="/dashboard/agenda"
+          href="/agenda"
         />
       </PageGrid>
     </PageShell>

@@ -63,7 +63,7 @@ const excluirEventoSchema = z.object({
 
 function revalidarAgenda() {
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/agenda");
+  revalidatePath("/agenda");
 }
 
 // ─────────────────────────────────────────────────────────────

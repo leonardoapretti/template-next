@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
-import { chaveData } from "@/app/dashboard/agenda/_components/engine/chave-data";
+import { chaveData } from "@/app/agenda/_components/engine/chave-data";
 import { adicionarMinutosHorario } from "@/lib/utils/data";
 
 export type AgendaView = "mes" | "semana" | "dia";

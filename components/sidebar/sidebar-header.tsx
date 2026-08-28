@@ -5,7 +5,7 @@ import { LogoEmpresa } from "./logo-header-sidebar";
 
 type NavbarHeaderProps = {
   children?: ReactNode;
-  perfilAtual: "admin" | "usuario";
+  perfilAtual: "admin" | "usuario" | "agenda";
   isAdmin: boolean;
 };
 
