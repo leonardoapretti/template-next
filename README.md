@@ -157,6 +157,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | `pnpm db:seed` | Popula o banco com dados de exemplo |
 | `pnpm db:studio` | Abre o Prisma Studio |
 | `pnpm db:reset` | Reseta o banco (⚠️ apaga os dados) |
+| `pnpm db:reset-demo` | Trunca todas as tabelas e recria o admin do seed (⚠️ apaga os dados; usado no reset diário da demo pública) |
 
 ## Estrutura do projeto
 
@@ -208,6 +209,16 @@ cd /var/www/postgres-vps
 E preencha no `.env` da VPS: `DB_HOST=shared-postgres`, `DB_PORT=5432`, `DB_USER`/`DB_PASSWORD`/`DB_NAME` conforme criado acima, e `DATABASE_URL=postgresql://<usuario>:<senha>@shared-postgres:5432/<database>`.
 
 O container da aplicação aplica as migrations pendentes (`prisma migrate deploy`) automaticamente antes de iniciar — não é necessário rodar nenhum comando manual pós-deploy.
+
+### Reset diário do banco (demo pública)
+
+Se essa instância ficar exposta publicamente pra teste (sem cadastro prévio), os dados que visitantes criam se acumulam. `scripts/reset-db.sh` esvazia todas as tabelas (`TRUNCATE ... CASCADE`) e recria só o admin do seed. Agende via crontab da VPS, à meia-noite (`America/Sao_Paulo`):
+
+```bash
+crontab -e
+# adicionar:
+0 0 * * * /var/www/template-next/scripts/reset-db.sh >> /var/log/template-next-reset.log 2>&1
+```
 
 ## CI
 
