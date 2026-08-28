@@ -3,7 +3,11 @@
 import { useAgenda } from "@/components/sidebar/sidebar-agenda/agenda-context";
 import { cn } from "@/lib/utils/tailwind";
 import { montarDraftDetalhesEvento } from "./engine/evento-dialog-draft";
-import { ALTURA_HORA_PX, type EventoPosicionado } from "./engine/layout-eventos-timeline";
+import {
+  ALTURA_HORA_PX,
+  type EventoPosicionado,
+  GUTTER_CRIACAO_PX,
+} from "./engine/layout-eventos-timeline";
 import { corEvento, rotuloEvento } from "./timeline-estilo";
 
 const GAP_ENTRE_COLUNAS_PX = 2;
@@ -37,7 +41,10 @@ export function TimelineEvento({ posicionado }: TimelineEventoProps) {
         top,
         height: Math.max(altura, 18),
         left: `calc(${(coluna / totalColunas) * 100}% + ${coluna === 0 ? 0 : GAP_ENTRE_COLUNAS_PX / 2}px)`,
-        width: `calc(${100 / totalColunas}% - ${GAP_ENTRE_COLUNAS_PX}px)`,
+        width:
+          coluna === totalColunas - 1
+            ? `calc(${100 / totalColunas}% - ${GAP_ENTRE_COLUNAS_PX + GUTTER_CRIACAO_PX}px)`
+            : `calc(${100 / totalColunas}% - ${GAP_ENTRE_COLUNAS_PX}px)`,
       }}
     >
       {compacto ? (

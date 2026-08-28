@@ -10,6 +10,15 @@ import { TimelineOverflow } from "./timeline-overflow";
 
 const ALTURA_TOTAL_PX = ALTURA_HORA_PX * HORAS_DIA.length;
 
+// Granularidade fina (30 min) pros botões de "criar evento" — assim, quando um
+// evento ocupa só parte da hora (ou a hora tem mais de uma faixa livre), ainda dá
+// pra clicar no espaço livre em vez de ficar bloqueado pelo evento por cima.
+const SLOTS_CRIACAO = HORAS_DIA.flatMap((hora) => {
+  const horaBase = hora.slice(0, 2);
+  return [`${horaBase}:00`, `${horaBase}:30`];
+});
+const ALTURA_SLOT_PX = ALTURA_HORA_PX / 2;
+
 function minutosAgora() {
   const agora = new Date();
   return agora.getHours() * 60 + agora.getMinutes();
@@ -47,13 +56,22 @@ export function TimelineColunaDia({
   return (
     <div className={cn("relative min-w-0 border-r", className)} style={{ height: ALTURA_TOTAL_PX }}>
       {HORAS_DIA.map((hora, indice) => (
+        <div
+          key={hora}
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 border-b"
+          style={{ top: indice * ALTURA_HORA_PX, height: ALTURA_HORA_PX }}
+        />
+      ))}
+
+      {SLOTS_CRIACAO.map((hora, indice) => (
         <button
           key={hora}
           type="button"
           aria-label={`Criar evento às ${hora}`}
           onClick={() => onSelectHorario(hora)}
-          className="absolute inset-x-0 cursor-pointer border-b hover:bg-accent/40"
-          style={{ top: indice * ALTURA_HORA_PX, height: ALTURA_HORA_PX }}
+          className="absolute inset-x-0 cursor-pointer hover:bg-accent/40"
+          style={{ top: indice * ALTURA_SLOT_PX, height: ALTURA_SLOT_PX }}
         />
       ))}
 

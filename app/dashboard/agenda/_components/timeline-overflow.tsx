@@ -12,7 +12,11 @@ import {
 } from "@/components/ui/dialog-drawer";
 import { cn } from "@/lib/utils/tailwind";
 import { montarDraftDetalhesEvento } from "./engine/evento-dialog-draft";
-import { ALTURA_HORA_PX, type OverflowPosicionado } from "./engine/layout-eventos-timeline";
+import {
+  ALTURA_HORA_PX,
+  GUTTER_CRIACAO_PX,
+  type OverflowPosicionado,
+} from "./engine/layout-eventos-timeline";
 import { corEvento, rotuloEvento } from "./timeline-estilo";
 
 const GAP_ENTRE_COLUNAS_PX = 2;
@@ -44,7 +48,7 @@ export function TimelineOverflow({ overflow }: TimelineOverflowProps) {
               top,
               height: Math.max(altura, 18),
               left: `calc(${(coluna / totalColunas) * 100}% + ${GAP_ENTRE_COLUNAS_PX / 2}px)`,
-              width: `calc(${100 / totalColunas}% - ${GAP_ENTRE_COLUNAS_PX}px)`,
+              width: `calc(${100 / totalColunas}% - ${GAP_ENTRE_COLUNAS_PX + GUTTER_CRIACAO_PX}px)`,
             }}
           >
             +{ocorrencias.length}

@@ -9,6 +9,13 @@ const DURACAO_MINIMA_MINUTOS = 20;
 /** Nº máximo de eventos sobrepostos exibidos lado a lado antes de agrupar o resto em "+N". */
 const MAX_COLUNAS_VISIVEIS = 2;
 
+/**
+ * Faixa reservada na borda direita da coluna do dia, nunca coberta por blocos de
+ * evento — garante que sempre haja um espaço clicável pra criar um novo evento,
+ * mesmo numa hora totalmente ocupada.
+ */
+export const GUTTER_CRIACAO_PX = 16;
+
 export interface EventoPosicionado {
   oc: OcorrenciaAgendamento;
   inicioMinutos: number;
