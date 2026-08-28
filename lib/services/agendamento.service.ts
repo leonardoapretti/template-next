@@ -11,8 +11,10 @@ type JanelaAgendamento = {
 type CriarEventoInput = {
   titulo: string;
   data: string;
-  horaInicio: string;
-  horaFim: string;
+  dataFim: string;
+  diaTodo: boolean;
+  horaInicio?: string;
+  horaFim?: string;
   recorrencia: "NENHUMA" | "DIARIA" | "SEMANAL" | "MENSAL" | "ANUAL";
   recorrenciaAte?: string;
   observacao?: string;
@@ -51,8 +53,10 @@ function normalizarEventoInput(input: CriarEventoInput) {
   return {
     titulo: input.titulo.trim(),
     data: input.data,
-    horaInicio: input.horaInicio,
-    horaFim: input.horaFim,
+    dataFim: input.dataFim,
+    diaTodo: input.diaTodo,
+    horaInicio: input.diaTodo ? null : (input.horaInicio ?? null),
+    horaFim: input.diaTodo ? null : (input.horaFim ?? null),
     recorrencia: input.recorrencia,
     recorrenciaAte: input.recorrenciaAte?.trim() ? input.recorrenciaAte.trim() : null,
     observacao: input.observacao?.trim() ? input.observacao.trim() : null,
@@ -147,6 +151,8 @@ class AgendamentoService {
         status,
         titulo: data.titulo,
         data: data.data,
+        dataFim: data.dataFim,
+        diaTodo: data.diaTodo,
         horaInicio: data.horaInicio,
         horaFim: data.horaFim,
         observacao: data.observacao,
@@ -155,6 +161,8 @@ class AgendamentoService {
         status,
         titulo: data.titulo,
         data: data.data,
+        dataFim: data.dataFim,
+        diaTodo: data.diaTodo,
         horaInicio: data.horaInicio,
         horaFim: data.horaFim,
         observacao: data.observacao,
@@ -279,15 +287,29 @@ class AgendamentoService {
     ]);
   }
 
+  /**
+   * Conflito de horário só faz sentido pra eventos de um dia só, com horário
+   * marcado — eventos de dia inteiro ou de vários dias não "conflitam" com
+   * nada, na mesma lógica que o Google Calendar usa.
+   */
   async listarConflitosNoHorario(
     userId: string,
     input: {
       eventoId?: string;
       data: string;
-      horaInicio: string;
-      horaFim: string;
+      dataFim: string;
+      diaTodo: boolean;
+      horaInicio?: string;
+      horaFim?: string;
     },
   ): Promise<ConflitoEvento[]> {
+    if (input.diaTodo || input.data !== input.dataFim || !input.horaInicio || !input.horaFim) {
+      return [];
+    }
+
+    const horaInicio = input.horaInicio;
+    const horaFim = input.horaFim;
+
     const eventos = await this.buscarEventosNaJanela(userId, {
       inicio: input.data,
       fim: input.data,
@@ -298,8 +320,12 @@ class AgendamentoService {
       fim: input.data,
     })
       .filter((evento) => evento.eventoId !== input.eventoId)
+      .filter(
+        (evento): evento is typeof evento & { horaInicio: string; horaFim: string } =>
+          !evento.diaTodo && Boolean(evento.horaInicio) && Boolean(evento.horaFim),
+      )
       .filter((evento) =>
-        horariosSeSobrepoem(input.horaInicio, input.horaFim, evento.horaInicio, evento.horaFim),
+        horariosSeSobrepoem(horaInicio, horaFim, evento.horaInicio, evento.horaFim),
       )
       .map((evento) => ({
         id: evento.eventoId,

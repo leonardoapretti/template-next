@@ -232,6 +232,15 @@ export function formatarDataIso(date: Date): string {
   ].join("-");
 }
 
+/** Número de dias entre duas datas "YYYY-MM-DD" (fim - inicio). */
+export function diferencaEmDias(dataFim: string, dataInicio: string): number {
+  const msPorDia = 24 * 60 * 60 * 1000;
+
+  return Math.round(
+    (criarDataLocal(dataFim).getTime() - criarDataLocal(dataInicio).getTime()) / msPorDia,
+  );
+}
+
 export interface DiaGrade {
   date: Date;
   mesAtual: boolean;

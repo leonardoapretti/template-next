@@ -10,9 +10,11 @@ export type EventoDialogDraft = {
   eventoId?: string;
   titulo?: string;
   data: string;
+  dataFim: string;
+  diaTodo: boolean;
   dataOriginal?: string;
-  horaInicio: string;
-  horaFim: string;
+  horaInicio?: string;
+  horaFim?: string;
   recorrencia?: "NENHUMA" | "DIARIA" | "SEMANAL" | "MENSAL" | "ANUAL";
   recorrenciaAte?: string;
   observacao?: string;
@@ -70,12 +72,17 @@ export function AgendaProvider({ children }: { children: React.ReactNode }) {
   const abrirNovoEvento = useCallback(
     (draft?: Partial<EventoDialogDraft>) => {
       const data = draft?.data ?? chaveData(selectedDate);
-      const horaInicio = draft?.horaInicio ?? "08:00";
-      const horaFim = draft?.horaFim ?? adicionarMinutosHorario(horaInicio, 60);
+      const diaTodo = draft?.diaTodo ?? false;
+      const horaInicio = diaTodo ? undefined : (draft?.horaInicio ?? "08:00");
+      const horaFim = diaTodo
+        ? undefined
+        : (draft?.horaFim ?? adicionarMinutosHorario(horaInicio ?? "08:00", 60));
 
       setEventoDialogDraft({
         modo: "novo",
         data,
+        dataFim: draft?.dataFim ?? data,
+        diaTodo,
         horaInicio,
         horaFim,
       });

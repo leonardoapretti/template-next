@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAgenda } from "@/components/sidebar/sidebar-agenda/agenda-context";
 import { DIAS_SEMANA_ABREV, getDiasDaSemana } from "@/lib/utils/data";
 import { cn } from "@/lib/utils/tailwind";
 import { LoadingBar } from "../chip-ocorrencia";
 import { janelaDaSemana } from "../engine/agenda-janela";
 import { chaveData } from "../engine/chave-data";
+import { agruparPorData, ehOcorrenciaDeBarra } from "../engine/expandir-recorrencias";
 import { calcularScrollInicialPx } from "../engine/layout-eventos-timeline";
 import { useAgendamentos } from "../engine/useAgendamentos";
+import { FaixaDiaTodo } from "../faixa-dia-todo";
 import { TimelineColunaDia } from "../timeline-coluna-dia";
 import { TimelineEixoHoras } from "../timeline-eixo-horas";
 
@@ -18,12 +20,21 @@ export function ViewSemana() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const janela = janelaDaSemana(selectedDate);
-  const { porData, isFetching } = useAgendamentos(janela);
+  const { ocorrencias, isFetching } = useAgendamentos(janela);
+  const porDataTimed = useMemo(
+    () => agruparPorData(ocorrencias.filter((oc) => !ehOcorrenciaDeBarra(oc))),
+    [ocorrencias],
+  );
   const semanaTemHoje = dias.some((dia) => dia.isHoje);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: calcularScrollInicialPx(semanaTemHoje) });
   }, [semanaTemHoje]);
+
+  function criarEventoDiaTodo(date: Date) {
+    setSelectedDate(date);
+    abrirNovoEvento({ data: chaveData(date), dataFim: chaveData(date), diaTodo: true });
+  }
 
   return (
     <div className="flex h-full flex-1 select-none flex-col overflow-hidden">
@@ -65,6 +76,13 @@ export function ViewSemana() {
         })}
       </div>
 
+      <div className="flex shrink-0 border-b">
+        <div className="w-12 shrink-0 border-r sm:w-16" />
+        <div className="min-w-0 flex-1">
+          <FaixaDiaTodo dias={dias} ocorrencias={ocorrencias} onCriarEvento={criarEventoDiaTodo} />
+        </div>
+      </div>
+
       <LoadingBar visible={isFetching} />
 
       {/* Timeline */}
@@ -75,7 +93,7 @@ export function ViewSemana() {
             <TimelineColunaDia
               key={dia.date.toISOString()}
               className="flex-1"
-              ocorrencias={porData.get(chaveData(dia.date)) ?? []}
+              ocorrencias={porDataTimed.get(chaveData(dia.date)) ?? []}
               isHoje={dia.isHoje}
               onSelectHorario={(horaInicio) => {
                 const data = new Date(dia.date);

@@ -13,8 +13,10 @@ import { agruparPorData } from "./expandir-recorrencias";
 type EventoInput = {
   titulo: string;
   data: string;
-  horaInicio: string;
-  horaFim: string;
+  dataFim: string;
+  diaTodo: boolean;
+  horaInicio?: string;
+  horaFim?: string;
   recorrencia: "NENHUMA" | "DIARIA" | "SEMANAL" | "MENSAL" | "ANUAL";
   recorrenciaAte?: string;
   observacao?: string;

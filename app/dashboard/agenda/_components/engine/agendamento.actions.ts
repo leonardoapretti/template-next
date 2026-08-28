@@ -17,17 +17,33 @@ const criarEventoSchema = z
   .object({
     titulo: z.string().trim().optional(),
     data: z.string().min(1),
-    horaInicio: z.string().min(1),
-    horaFim: z.string().min(1),
+    dataFim: z.string().min(1),
+    diaTodo: z.boolean(),
+    horaInicio: z.string().optional(),
+    horaFim: z.string().optional(),
     recorrencia: z.enum(["NENHUMA", "DIARIA", "SEMANAL", "MENSAL", "ANUAL"]),
     recorrenciaAte: z.string().optional(),
     observacao: z.string().optional(),
     confirmarConflito: z.boolean().optional(),
   })
-  .refine((data) => data.horaInicio < data.horaFim, {
+  .refine((data) => data.dataFim >= data.data, {
+    path: ["dataFim"],
+    message: "A data final não pode ser anterior à inicial.",
+  })
+  .refine((data) => data.diaTodo || Boolean(data.horaInicio && data.horaFim), {
     path: ["horaFim"],
-    message: "O horário final deve ser maior que o inicial.",
-  });
+    message: "Preencha o horário ou marque como dia inteiro.",
+  })
+  .refine(
+    (data) =>
+      data.diaTodo || data.data !== data.dataFim || !data.horaInicio || !data.horaFim
+        ? true
+        : data.horaInicio < data.horaFim,
+    {
+      path: ["horaFim"],
+      message: "O horário final deve ser maior que o inicial.",
+    },
+  );
 
 function normalizarTituloEvento(input: z.infer<typeof criarEventoSchema>) {
   return input.titulo?.trim() || "Sem título";

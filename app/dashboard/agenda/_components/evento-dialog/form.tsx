@@ -1,10 +1,11 @@
 "use client";
 
 import { Controller, type UseFormReturn } from "react-hook-form";
-import { DatePickerField } from "@/components/date-picker-field";
+import { DatePickerField, DateRangePickerField } from "@/components/date-picker-field";
 import { FormErrorMessage } from "@/components/form-error-message";
 import { HourPickerField } from "@/components/hour-picker-field";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,6 +28,7 @@ type EventoFormProps = {
 
 export function EventoForm({ emEdicao, form, loading, onCancel, onSubmit }: EventoFormProps) {
   const recorrencia = form.watch("recorrencia");
+  const diaTodo = form.watch("diaTodo");
 
   return (
     <div className="grid gap-4">
@@ -42,43 +44,62 @@ export function EventoForm({ emEdicao, form, loading, onCancel, onSubmit }: Even
         )}
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Controller
-          control={form.control}
-          name="data"
-          render={({ field, fieldState }) => (
-            <div className="grid gap-2 sm:col-span-1">
-              <Label>Data</Label>
-              <DatePickerField value={field.value} onChange={field.onChange} />
-              <FormErrorMessage error={fieldState.error} />
-            </div>
-          )}
-        />
+      <Controller
+        control={form.control}
+        name="periodo"
+        render={({ field }) => (
+          <div className="grid gap-2">
+            <Label>Período</Label>
+            <DateRangePickerField value={field.value} onChange={field.onChange} />
+            <FormErrorMessage
+              error={form.formState.errors.periodo?.to ?? form.formState.errors.periodo?.from}
+            />
+          </div>
+        )}
+      />
 
-        <Controller
-          control={form.control}
-          name="horaInicio"
-          render={({ field, fieldState }) => (
-            <div className="grid gap-2">
-              <Label>Início</Label>
-              <HourPickerField value={field.value} onChange={field.onChange} />
-              <FormErrorMessage error={fieldState.error} />
-            </div>
-          )}
-        />
+      <Controller
+        control={form.control}
+        name="diaTodo"
+        render={({ field }) => (
+          <div className="flex w-fit items-center gap-2 text-sm">
+            <Checkbox
+              id="evento-dia-todo"
+              checked={field.value}
+              onCheckedChange={(checked) => field.onChange(checked === true)}
+            />
+            <Label htmlFor="evento-dia-todo">Dia inteiro</Label>
+          </div>
+        )}
+      />
 
-        <Controller
-          control={form.control}
-          name="horaFim"
-          render={({ field, fieldState }) => (
-            <div className="grid gap-2">
-              <Label>Fim</Label>
-              <HourPickerField value={field.value} onChange={field.onChange} />
-              <FormErrorMessage error={fieldState.error} />
-            </div>
-          )}
-        />
-      </div>
+      {!diaTodo && (
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            control={form.control}
+            name="horaInicio"
+            render={({ field, fieldState }) => (
+              <div className="grid gap-2">
+                <Label>Início</Label>
+                <HourPickerField value={field.value} onChange={field.onChange} />
+                <FormErrorMessage error={fieldState.error} />
+              </div>
+            )}
+          />
+
+          <Controller
+            control={form.control}
+            name="horaFim"
+            render={({ field, fieldState }) => (
+              <div className="grid gap-2">
+                <Label>Fim</Label>
+                <HourPickerField value={field.value} onChange={field.onChange} />
+                <FormErrorMessage error={fieldState.error} />
+              </div>
+            )}
+          />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Controller
@@ -91,7 +112,7 @@ export function EventoForm({ emEdicao, form, loading, onCancel, onSubmit }: Even
                 <SelectTrigger className="w-full" aria-invalid={!!fieldState.error}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent alignItemWithTrigger={false}>
                   <SelectItem value="NENHUMA">Sem recorrência</SelectItem>
                   <SelectItem value="DIARIA">Diária</SelectItem>
                   <SelectItem value="SEMANAL">Semanal</SelectItem>

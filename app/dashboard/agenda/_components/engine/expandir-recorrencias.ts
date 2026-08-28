@@ -1,5 +1,6 @@
 import {
   criarDataLocal,
+  diferencaEmDias,
   formatarDataIso,
   somarAnos,
   somarDias,
@@ -23,9 +24,17 @@ function isDateInWindow(data: string, janela: JanelaAgenda) {
   return data >= janela.inicio && data <= janela.fim;
 }
 
+/**
+ * Datas de início de cada ocorrência do evento cujo intervalo [data, dataFim]
+ * cruza a janela — não apenas as que começam dentro dela, já que um evento de
+ * vários dias pode ter começado antes da janela e ainda assim aparecer nela.
+ */
 function getEventDatesInWindow(evento: EventoRaw, janela: JanelaAgenda) {
+  const duracaoDias = diferencaEmDias(evento.dataFim, evento.data);
+
   if (evento.recorrencia === "NENHUMA") {
-    return evento.data >= janela.inicio && evento.data <= janela.fim ? [evento.data] : [];
+    const cruzaJanela = evento.data <= janela.fim && evento.dataFim >= janela.inicio;
+    return cruzaJanela ? [evento.data] : [];
   }
 
   const dates: string[] = [];
@@ -36,7 +45,7 @@ function getEventDatesInWindow(evento: EventoRaw, janela: JanelaAgenda) {
 
   let current = criarDataLocal(evento.data);
 
-  while (current < windowStart) {
+  while (somarDias(current, duracaoDias) < windowStart) {
     current = getNextOccurrence(current, evento.recorrencia);
   }
 
@@ -64,7 +73,9 @@ function toOccurrence(
     return null;
   }
 
+  const duracaoDias = diferencaEmDias(evento.dataFim, evento.data);
   const data = excecao?.data ?? dataOriginal;
+  const dataFimPadrao = formatarDataIso(somarDias(criarDataLocal(data), duracaoDias));
 
   return {
     id: `${evento.id}::${data}::${index}`,
@@ -75,6 +86,8 @@ function toOccurrence(
     recorrenciaEvento: evento.recorrencia,
     recorrenciaAte: evento.recorrenciaAte,
     data,
+    dataFim: excecao?.dataFim ?? dataFimPadrao,
+    diaTodo: excecao?.diaTodo ?? evento.diaTodo,
     horaInicio: excecao?.horaInicio ?? evento.horaInicio,
     horaFim: excecao?.horaFim ?? evento.horaFim,
     dataOriginal,
@@ -99,7 +112,9 @@ export function expandirEventosNaJanela(
           return toOccurrence(evento, data, index, excecoes.get(data));
         })
         .filter((ocorrencia): ocorrencia is OcorrenciaAgendamento => {
-          return ocorrencia !== null && isDateInWindow(ocorrencia.data, janela);
+          if (ocorrencia === null) return false;
+          // Mantém a ocorrência se qualquer parte do seu intervalo cruzar a janela.
+          return ocorrencia.data <= janela.fim && ocorrencia.dataFim >= janela.inicio;
         });
 
       for (const excecao of evento.excecoes ?? []) {
@@ -120,7 +135,9 @@ export function expandirEventosNaJanela(
     })
     .sort((a, b) => {
       const dateCompare = a.data.localeCompare(b.data);
-      return dateCompare !== 0 ? dateCompare : a.horaInicio.localeCompare(b.horaInicio);
+      return dateCompare !== 0
+        ? dateCompare
+        : (a.horaInicio ?? "").localeCompare(b.horaInicio ?? "");
     });
 }
 
@@ -136,4 +153,9 @@ export function agruparPorData(
   }
 
   return map;
+}
+
+/** Ocorrências que devem renderizar como barra (dia inteiro ou span de vários dias). */
+export function ehOcorrenciaDeBarra(oc: OcorrenciaAgendamento): boolean {
+  return oc.diaTodo || oc.dataFim !== oc.data;
 }

@@ -1,16 +1,27 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: dias da grade do mês não têm chave estável melhor */
 "use client";
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import { useAgenda } from "@/components/sidebar/sidebar-agenda/agenda-context";
 import { DIAS_SEMANA_ABREV, getDiasDoMes, proximoHorarioPadrao } from "@/lib/utils/data";
-import { CelulaDia } from "../celula-exibicao";
 import { LoadingBar } from "../chip-ocorrencia";
 import { janelaDoMes } from "../engine/agenda-janela";
 import { chaveData } from "../engine/chave-data";
 import { montarDraftDetalhesEvento } from "../engine/evento-dialog-draft";
+import { agruparPorData, ehOcorrenciaDeBarra } from "../engine/expandir-recorrencias";
+import { layoutFaixaDias } from "../engine/layout-eventos-mes";
 import { useAgendamentos } from "../engine/useAgendamentos";
+import { SemanaMes } from "../mes-semana-linha";
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+
+  return chunks;
+}
 
 export function ViewMes() {
   const searchParams = useSearchParams();
@@ -20,9 +31,21 @@ export function ViewMes() {
   const ano = selectedDate.getFullYear();
   const mes = selectedDate.getMonth();
   const dias = getDiasDoMes(ano, mes);
+  const semanas = useMemo(() => chunk(dias, 7), [dias]);
 
   const janela = janelaDoMes(selectedDate);
-  const { ocorrencias, porData, isFetching } = useAgendamentos(janela);
+  const { ocorrencias, isFetching } = useAgendamentos(janela);
+
+  const porDataChips = useMemo(
+    () => agruparPorData(ocorrencias.filter((oc) => !ehOcorrenciaDeBarra(oc))),
+    [ocorrencias],
+  );
+
+  const layoutsPorSemana = useMemo(
+    () => semanas.map((semana) => layoutFaixaDias(semana, ocorrencias)),
+    [semanas, ocorrencias],
+  );
+
   const eventoIdParam = searchParams.get("eventoId");
   const dataParam = searchParams.get("data");
   const modoParam = searchParams.get("modo");
@@ -91,33 +114,26 @@ export function ViewMes() {
 
       <LoadingBar visible={isFetching} />
 
-      {/* Grade de dias */}
-      <div className="grid flex-1 grid-cols-7" style={{ gridAutoRows: "1fr" }}>
-        {dias.map((dia, i) => {
-          const isSelecionado =
-            dia.date.getDate() === selectedDate.getDate() &&
-            dia.date.getMonth() === selectedDate.getMonth() &&
-            dia.date.getFullYear() === selectedDate.getFullYear();
-
-          return (
-            <CelulaDia
-              key={i}
-              ocorrencias={porData.get(chaveData(dia.date)) ?? []}
-              isHoje={dia.isHoje}
-              isSelecionado={isSelecionado}
-              mesAtual={dia.mesAtual}
-              numeroDia={dia.date.getDate()}
-              onClick={() => {
-                setSelectedDate(new Date(dia.date));
-                const horaInicio = proximoHorarioPadrao();
-                abrirNovoEvento({
-                  data: chaveData(dia.date),
-                  horaInicio,
-                });
-              }}
-            />
-          );
-        })}
+      {/* Grade do mês, uma linha por semana */}
+      <div className="flex flex-1 flex-col">
+        {semanas.map((semana, indice) => (
+          <SemanaMes
+            key={chaveData(semana[0].date)}
+            semana={semana}
+            layout={layoutsPorSemana[indice]}
+            porDataChips={porDataChips}
+            selectedDate={selectedDate}
+            onSelecionarDia={setSelectedDate}
+            onCriarEvento={(date) => {
+              const horaInicio = proximoHorarioPadrao();
+              abrirNovoEvento({
+                data: chaveData(date),
+                dataFim: chaveData(date),
+                horaInicio,
+              });
+            }}
+          />
+        ))}
       </div>
     </div>
   );

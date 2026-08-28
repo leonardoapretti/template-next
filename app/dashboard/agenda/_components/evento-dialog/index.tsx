@@ -34,7 +34,8 @@ type EscopoRecorrencia = "ESTE" | "DAQUI_PRA_FRENTE";
 
 const FORM_INICIAL: EventoFormSchema = {
   titulo: "",
-  data: "",
+  periodo: { from: "", to: "" },
+  diaTodo: false,
   horaInicio: "08:00",
   horaFim: "09:00",
   recorrencia: "NENHUMA",
@@ -62,9 +63,11 @@ function formatarDataCompleta(data: string) {
 function montarPayload(form: EventoFormSchema, confirmarConflito: boolean) {
   return {
     titulo: form.titulo.trim() || "Sem título",
-    data: form.data,
-    horaInicio: form.horaInicio,
-    horaFim: form.horaFim,
+    data: form.periodo.from,
+    dataFim: form.periodo.to,
+    diaTodo: form.diaTodo,
+    horaInicio: form.diaTodo ? undefined : form.horaInicio,
+    horaFim: form.diaTodo ? undefined : form.horaFim,
     recorrencia: form.recorrencia,
     recorrenciaAte: form.recorrenciaAte || undefined,
     observacao: form.observacao,
@@ -105,9 +108,10 @@ export function EventoDialog() {
 
     form.reset({
       titulo: eventoDialogDraft.titulo ?? "",
-      data: eventoDialogDraft.data,
-      horaInicio: eventoDialogDraft.horaInicio,
-      horaFim: eventoDialogDraft.horaFim,
+      periodo: { from: eventoDialogDraft.data, to: eventoDialogDraft.dataFim },
+      diaTodo: eventoDialogDraft.diaTodo,
+      horaInicio: eventoDialogDraft.horaInicio ?? "08:00",
+      horaFim: eventoDialogDraft.horaFim ?? "09:00",
       recorrencia: eventoDialogDraft.recorrencia ?? "NENHUMA",
       recorrenciaAte: eventoDialogDraft.recorrenciaAte ?? "",
       observacao: eventoDialogDraft.observacao ?? "",
@@ -302,17 +306,20 @@ function EventoDetalhesReadonly({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Data</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {evento.dataFim !== evento.data ? "Período" : "Data"}
+              </span>
               <span className="capitalize">
                 <CalendarClock className="mr-1 inline size-3.5 text-muted-foreground" />
                 {formatarDataCompleta(evento.data)}
+                {evento.dataFim !== evento.data ? ` – ${formatarDataCompleta(evento.dataFim)}` : ""}
               </span>
             </div>
 
             <div className="grid gap-1">
               <span className="text-xs font-medium text-muted-foreground">Horário</span>
               <span className="tabular-nums">
-                {evento.horaInicio} - {evento.horaFim}
+                {evento.diaTodo ? "Dia inteiro" : `${evento.horaInicio} - ${evento.horaFim}`}
               </span>
             </div>
           </div>

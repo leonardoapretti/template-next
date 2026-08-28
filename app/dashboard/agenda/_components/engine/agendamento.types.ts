@@ -8,6 +8,8 @@ export interface EventoExcecaoRaw {
   status: StatusExcecaoEvento;
   titulo: string | null;
   data: string | null;
+  dataFim: string | null;
+  diaTodo: boolean | null;
   horaInicio: string | null;
   horaFim: string | null;
   observacao: string | null;
@@ -17,8 +19,10 @@ export interface EventoRaw {
   id: string;
   titulo: string;
   data: string;
-  horaInicio: string;
-  horaFim: string;
+  dataFim: string;
+  diaTodo: boolean;
+  horaInicio: string | null;
+  horaFim: string | null;
   recorrencia: FrequenciaEvento;
   recorrenciaAte: string | null;
   observacao: string | null;
@@ -37,12 +41,16 @@ export interface OcorrenciaAgendamento {
   recorrenciaEvento: FrequenciaEvento | null;
   recorrenciaAte: string | null;
 
-  /** Data efetiva de exibição no calendário ("YYYY-MM-DD") */
+  /** Data de início efetiva de exibição no calendário ("YYYY-MM-DD") */
   data: string;
-  /** Hora de início efetiva ("HH:mm") */
-  horaInicio: string;
-  /** Hora de fim efetiva ("HH:mm") */
-  horaFim: string;
+  /** Data de fim efetiva ("YYYY-MM-DD"); igual a `data` em eventos de um dia só */
+  dataFim: string;
+  /** Evento sem horário específico — pode abranger vários dias */
+  diaTodo: boolean;
+  /** Hora de início efetiva ("HH:mm"), ausente quando diaTodo */
+  horaInicio: string | null;
+  /** Hora de fim efetiva ("HH:mm"), ausente quando diaTodo */
+  horaFim: string | null;
 
   dataOriginal: string;
 

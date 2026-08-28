@@ -37,7 +37,8 @@ export interface LayoutDia {
   overflows: OverflowPosicionado[];
 }
 
-function paraMinutos(horario: string): number {
+function paraMinutos(horario: string | null): number {
+  if (!horario) return 0;
   const [hora, minuto] = horario.split(":").map(Number);
   return (hora ?? 0) * 60 + (minuto ?? 0);
 }

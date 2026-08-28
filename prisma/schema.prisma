@@ -83,16 +83,20 @@ model Role {
 // AGENDA
 // ─────────────────────────────────────────────
 
-// Evento de agenda de um usuário. data/horaInicio/horaFim ficam em campos de
-// texto (não DateTime) para permitir recorrência e exceções por ocorrência
-// sem depender de fuso horário — a expansão das ocorrências dentro de uma
-// janela de datas acontece em app/dashboard/agenda/_components/engine.
+// Evento de agenda de um usuário. data/dataFim/horaInicio/horaFim ficam em
+// campos de texto (não DateTime) para permitir recorrência e exceções por
+// ocorrência sem depender de fuso horário — a expansão das ocorrências
+// dentro de uma janela de datas acontece em app/dashboard/agenda/_components/engine.
+// dataFim >= data: eventos de um dia só têm dataFim igual a data. diaTodo
+// marca eventos sem horário específico (horaInicio/horaFim ficam nulos).
 model Evento {
   id             String           @id @default(cuid())
   titulo         String
   data           String
-  horaInicio     String
-  horaFim        String
+  dataFim        String
+  diaTodo        Boolean          @default(false)
+  horaInicio     String?
+  horaFim        String?
   recorrencia    FrequenciaEvento @default(NENHUMA)
   recorrenciaAte String?
   observacao     String?          @db.Text
@@ -107,6 +111,7 @@ model Evento {
 
   @@index([userId])
   @@index([data])
+  @@index([dataFim])
   @@index([recorrencia])
   @@map("eventos")
 }
@@ -122,6 +127,8 @@ model EventoExcecao {
 
   titulo     String?
   data       String?
+  dataFim    String?
+  diaTodo    Boolean?
   horaInicio String?
   horaFim    String?
   observacao String? @db.Text
