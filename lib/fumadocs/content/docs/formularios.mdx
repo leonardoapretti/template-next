@@ -90,6 +90,92 @@ export function MeuForm() {
 
 ## Exemplos de referência
 
-- `app/(auth)/cadastro/_components/` — cadastro de usuário.
-- `app/(auth)/login/_components/` — login.
 - `app/fale-conosco/` — formulário de contato que envia e-mail via Resend.
+
+## Variante: progressive enhancement (`useActionState`)
+
+O padrão acima (react-hook-form + `zodResolver` + `onSubmit`) depende de JavaScript já ter carregado e hidratado antes do submit funcionar. Para os formulários mais críticos da aplicação — **login** e **cadastro** (`app/(auth)/login/_components/` e `app/(auth)/cadastro/_components/`), os pontos de entrada antes de qualquer sessão existir — o template usa uma variante que funciona mesmo sem JS: o form usa `action={formAction}` nativo do HTML, então sem JavaScript o browser faz um POST normal e a server action roda direto no servidor; com JS, o React intercepta e atualiza a UI sem reload.
+
+```
+login/ (ou cadastro/)
+  page.tsx
+  _components/
+    schema.ts       # o mesmo zod de sempre
+    actions.ts       # action com assinatura (prevState, formData)
+    login-form.tsx    # client component com useActionState + <form action>
+```
+
+`actions.ts` — a action recebe `(prevState, formData)` (assinatura exigida por `useActionState`) em vez de um objeto já tipado, e extrai os campos manualmente de `FormData`:
+
+```ts
+"use server";
+
+import { redirect } from "next/navigation";
+import { meuSchema } from "./schema";
+
+export type MinhaActionState = {
+  success: boolean;
+  errorMessage: string;
+  fieldErrors?: Record<string, string[]>;
+} | null;
+
+// Assinatura (prevState, formData) exigida pelo useActionState do React para
+// que o form funcione via <form action={...}> nativo (progressive enhancement:
+// sem JS, o browser faz um POST normal e esta action roda no servidor).
+export async function minhaAction(
+  _prevState: MinhaActionState,
+  formData: FormData,
+): Promise<MinhaActionState> {
+  const parsed = meuSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      errorMessage: "Dados inválidos.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  // ...lógica de negócio
+
+  redirect("/destino");
+}
+```
+
+`minha-form.tsx` — o componente client usa `useActionState`, não `useForm`:
+
+```tsx
+"use client";
+
+import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { minhaAction } from "./actions";
+
+export function MeuForm() {
+  const [state, formAction, pending] = useActionState(minhaAction, null);
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <Input name="email" type="email" required />
+
+      {state?.errorMessage && <p className="text-sm text-destructive">{state.errorMessage}</p>}
+
+      <Button type="submit" disabled={pending}>
+        {pending ? "Enviando..." : "Enviar"}
+      </Button>
+    </form>
+  );
+}
+```
+
+Note que não há `onSubmit`, `handleSubmit` nem `zodResolver` — a validação client-side fica só nos atributos nativos do input (`required`, `type="email"`, `minLength`), e a validação de verdade acontece na action, igual ao padrão principal.
+
+### Quando usar qual
+
+- **Padrão principal (react-hook-form)**: a maioria dos formulários da aplicação — já roda depois do usuário autenticado, dentro de uma sessão de app já hidratada, então depender de JS é uma premissa razoável. Também dá validação client-side mais rica (erro por campo, revalidação ao digitar) via `zodResolver`.
+- **Progressive enhancement (`useActionState`)**: formulários de entrada crítica, acessados por qualquer visitante antes (ou fora) de qualquer garantia de hidratação — login, cadastro, redefinição de senha. Continuam funcionais em conexões lentas, com JS bloqueado/falho, ou no meio da hidratação inicial.
+
+Novos formulários de fluxo interno (dentro do dashboard, por exemplo) devem seguir o padrão principal, a menos que exista o mesmo motivo (ponto de entrada público/crítico) que justificou a exceção em login/cadastro.

@@ -1,0 +1,90 @@
+---
+title: Agenda
+description: Calendário de eventos com visões de mês, semana e dia, recorrência e detecção de conflito.
+docId: agenda
+icon: CalendarDays
+---
+
+A agenda é um exemplo completo de feature do template: calendário de eventos com visões de mês, semana e dia, eventos recorrentes, exceções pontuais, eventos de período (vários dias) e dia inteiro, detecção de conflito de horário e controle de acesso granular. Vive em rota própria (`app/agenda`), fora do dashboard, com layout e sidebar dedicados (`AgendaSidebar`) — o mesmo padrão de área independente que `app/dashboard` e `app/(admin)/admin` já seguem, cada uma com seu próprio `SidebarLayout`.
+
+## Onde fica
+
+```
+app/agenda/
+  layout.tsx              # SidebarLayout + AgendaProvider (exige sessão)
+  page.tsx
+  _components/
+    agenda-client.tsx       # componente raiz, decide a visão ativa
+    views/                   # view-mes.tsx, view-semana.tsx, view-dia.tsx
+    evento-dialog/           # criar/editar evento (form/schema)
+    dia-detalhe-dialog.tsx    # lista de eventos de um dia (clique no dia, na visão mês)
+    engine/                  # lógica pura: queries, actions, expansão de recorrência, layout do grid
+```
+
+`components/sidebar/sidebar-agenda/` guarda o `AgendaProvider` (estado da UI: data selecionada, visão ativa, dialogs abertos) e utilitários de formatação — não confundir com o `engine/` de `app/agenda`, que é a lógica de domínio (recorrência, conflito, persistência).
+
+## Modelo de dados
+
+```prisma
+model Evento {
+  id             String           @id @default(cuid())
+  titulo         String
+  data           String           // "YYYY-MM-DD", início
+  dataFim        String           // "YYYY-MM-DD", fim (igual a `data` em eventos de 1 dia)
+  diaTodo        Boolean          @default(false)
+  horaInicio     String?          // "HH:mm", ausente quando diaTodo
+  horaFim        String?
+  recorrencia    FrequenciaEvento @default(NENHUMA) // NENHUMA | DIARIA | SEMANAL | MENSAL | ANUAL
+  recorrenciaAte String?
+  observacao     String?
+  userId         String
+  excecoes       EventoExcecao[]
+}
+
+model EventoExcecao {
+  id           String              @id @default(cuid())
+  eventoId     String
+  dataOriginal String              // qual ocorrência da série esta exceção substitui
+  status       StatusExcecaoEvento // ALTERADO | REMARCADO | CANCELADO
+  // demais campos (titulo, data, dataFim, diaTodo, horaInicio, horaFim,
+  // observacao) sobrescrevem o evento-base só para essa ocorrência
+}
+```
+
+Datas e horários são strings (`"YYYY-MM-DD"`, `"HH:mm"`), não `DateTime` — evita ambiguidade de fuso horário em evento recorrente/dia inteiro. `Evento` guarda a série (ex.: "reunião toda segunda"); `EventoExcecao` guarda o desvio de uma ocorrência específica dessa série (adiar só essa semana, cancelar só esse dia, mudar só esse horário), sem afetar as demais.
+
+## Como uma janela de calendário é montada
+
+1. A UI pede uma janela de datas (`{ inicio, fim }`, ex.: os dias visíveis no grid do mês) via `getOcorrenciasAction`.
+2. `agendamento.queries.ts` busca no banco os `Evento` cujo intervalo cruza a janela (evento recorrente sem fim, ou evento de período que começou antes e termina depois).
+3. `expandir-recorrencias.ts` expande cada `Evento` recorrente nas datas concretas de ocorrência dentro da janela (`expandirEventosNaJanela`), aplicando as `EventoExcecao` correspondentes por cima (ocorrência alterada, remarcada ou removida se cancelada).
+4. O resultado é uma lista de `OcorrenciaAgendamento` — já achatada, uma entrada por ocorrência visível, pronta pra renderizar — agrupada por data com `agruparPorData` para a visão de mês.
+
+`app/agenda/_components/engine/useAgendamentos.ts` (hook client, TanStack Query) chama essa action e expõe `criarEvento`/`atualizarEvento`/`excluirEvento` como mutations, invalidando a query da janela atual depois de cada mutação bem-sucedida.
+
+## Conflito de horário
+
+Antes de criar/atualizar um evento, `agendamentoService.listarConflitosNoHorario` verifica se o novo horário colide com outro evento do mesmo usuário. Se houver conflito e o caller não tiver passado `confirmarConflito: true`, a action retorna `{ success: false, type: "conflict", conflitos }` em vez de persistir — o dialog de evento (`evento-dialog/`) usa isso para mostrar os conflitos e pedir confirmação explícita antes de reenviar com `confirmarConflito: true`.
+
+## Escopo de edição/exclusão em evento recorrente
+
+Editar ou excluir uma ocorrência de um evento recorrente pede um `escopoRecorrencia`:
+
+- `"ESTE"` — afeta só aquela ocorrência (cria/atualiza uma `EventoExcecao` pontual).
+- `"DAQUI_PRA_FRENTE"` — afeta essa ocorrência e todas as futuras da série.
+
+## Controle de acesso
+
+Cada mutação é protegida por uma permissão granular própria (veja [Controle de acesso](/docs/controle-de-acesso#exemplo-real-permissão-granular-agenda)):
+
+- `agenda:create` — `criarEventoAction`.
+- `agenda:update` — `atualizarEventoAction`.
+- `agenda:delete` — `excluirEventoAction`.
+
+`getOcorrenciasAction` (leitura) não exige permissão granular — só sessão autenticada, garantida pelo layout de `app/agenda`.
+
+## Estendendo
+
+- **Novo tipo de recorrência**: adicione o valor em `FrequenciaEvento` (enum Prisma + `agendamento.types.ts`) e em `getNextOccurrence` (`expandir-recorrencias.ts`).
+- **Novo campo no evento**: adicione na `Evento`/`EventoExcecao` (migration), nos schemas de `evento-dialog/schema.ts` e `agendamento.actions.ts`, e no mapeamento em `expandir-recorrencias.ts`.
+- **Nova regra de acesso**: siga "Como incluir uma nova permissão" em [Controle de acesso](/docs/controle-de-acesso#como-incluir-uma-nova-permissão).

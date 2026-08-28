@@ -9,24 +9,37 @@ O controle de acesso fica concentrado em `lib/access-control`. Esse diretório r
 
 ## Estrutura
 
-- `context.ts`: monta o `AccessContext` do usuário atual (sessão).
+- `context.ts`: monta o `AccessContext` do usuário atual (sessão + papel + permissões).
 - `current-user.ts`: helpers para obter o usuário/contexto atual.
-- `policy.ts`: decisões puras — papel ativo.
-- `action-guards.ts`: guards usados por server actions.
+- `policy.ts`: decisões puras — papel ativo (`canActAs`) e permissão granular (`canUseFeature`).
+- `action-guards.ts`: guard de papel (`assertAdminAction`), usado por server actions.
+- `permission-guard.ts`: guard de permissão granular (`assertCurrentUserCan`), usado por server actions.
 - `errors.ts`: erros padronizados de acesso.
 
 ## AccessContext
 
-`AccessContext` é o objeto base para qualquer decisão de acesso. Contém `usuarioId` e `isAdmin`.
+`AccessContext` é o objeto base para qualquer decisão de acesso. Contém o usuário atual, se ele é admin e a lista de permissões do papel dele.
 
 ```ts
 export type AccessContext = {
   usuarioId: string;
   isAdmin: boolean;
+  permissoes: string[];
 };
 ```
 
+`permissoes` vem de `usuario.role.permissoes` (`Role.permissoes`, uma coluna `String[]` no Prisma) — o papel (`Role`) atribuído ao usuário via `User.roleId`. Um usuário sem papel atribuído tem `permissoes: []`.
+
 Exemplo real: `app/(admin)/admin/layout.tsx` usa `getAccessContext()` e `canActAs(ctx, "ADMIN")` para decidir se o usuário pode entrar na área administrativa, redirecionando para `/dashboard` caso contrário.
+
+## Dois mecanismos de decisão
+
+O motor tem duas camadas, para dois tipos de regra diferentes:
+
+- **Papel administrativo** (`isAdmin`, binário): decide acesso a áreas/funcionalidades inteiras da aplicação (ex.: `/admin`, `/dashboard/emails`, `/dashboard/docs`). Verificado com `canActAs(ctx, "ADMIN")` / `assertAdminAction`.
+- **Permissão granular** (`recurso:acao`, lista): decide acesso a uma ação específica dentro de um recurso, independente de o usuário ser admin ou não (ex.: `agenda:create`, `agenda:update`, `agenda:delete`). Verificado com `canUseFeature(ctx, permissao)` / `assertCurrentUserCan(permissao)`.
+
+Um usuário admin (`ctx.isAdmin === true`) sempre passa em `canUseFeature`, independente do que estiver em `ctx.permissoes` — admin tem acesso irrestrito a qualquer permissão granular.
 
 ## Fluxo padrão de uma action protegida
 
@@ -63,22 +76,57 @@ export async function exemploAction(input: unknown) {
 }
 ```
 
+## Exemplo real: permissão granular (`agenda:*`)
+
+`app/agenda/_components/engine/agendamento.actions.ts` protege criação, atualização e exclusão de eventos com `assertCurrentUserCan`, uma permissão por ação:
+
+```ts
+"use server";
+
+import { assertCurrentUserCan } from "@/lib/access-control";
+
+export async function criarEventoAction(input: unknown) {
+  const ctx = await assertCurrentUserCan("agenda:create");
+
+  // ctx.usuarioId já validado; se o usuário não tiver a permissão
+  // "agenda:create" (e não for admin), a linha acima lança AccessDeniedError
+  // antes de qualquer parse/mutação.
+
+  // ...validação do input e chamada ao agendamentoService
+}
+```
+
+`atualizarEventoAction` e `excluirEventoAction` seguem o mesmo padrão, com `"agenda:update"` e `"agenda:delete"`.
+
+## Como incluir uma nova permissão
+
+1. **Escolha o nome** no formato `recurso:acao` (ex.: `relatorios:export`, `usuarios:delete`) — sem enum central para manter; qualquer string é uma permissão válida.
+2. **Atribua a string a um `Role`**: `Role.permissoes` é uma coluna `String[]` no Prisma, então não exige migration — adicione o valor à lista de um papel existente (via seed, Prisma Studio, ou uma action própria que use `roleService`) e associe o usuário a esse papel (`User.roleId`).
+3. **Proteja a action** com `await assertCurrentUserCan("recurso:acao")` logo no topo, antes de validar o input — igual ao exemplo acima.
+4. **Esconda a UI correspondente**, se fizer sentido, checando `canUseFeature(ctx, "recurso:acao")` num Server Component (sem precisar lançar erro — só decide o que renderizar).
+
+`lib/services/role.service.ts` expõe `listarTodos()` e `recuperarComPermissoes(id)` para ler papéis e suas permissões (ex.: para uma futura tela de administração de papéis).
+
 ## Policies
 
 `policy.ts` contém decisões sem consultar o banco:
 
-- `canActAs(ctx, "ADMIN")`.
+- `canActAs(ctx, "ADMIN")` — papel administrativo.
+- `canUseFeature(ctx, permissao)` — permissão granular (`recurso:acao`); admin sempre retorna `true`.
 
-Use policy quando a decisão depender apenas do `AccessContext` já carregado.
+Use policy quando a decisão depender apenas do `AccessContext` já carregado — por exemplo, pra decidir o que renderizar num Server Component sem lançar erro.
 
 ## Erros
 
 Erros disponíveis em `errors.ts`: `AuthenticationRequiredError`, `AccessDeniedError`, `ProfileRequiredError`.
+
+`assertAdminAction` lança `ProfileRequiredError` (subclasse de `AccessDeniedError`); `assertCurrentUserCan` lança `AccessDeniedError` diretamente, com a permissão faltante na mensagem.
 
 ## Estendendo o RBAC
 
 Para adicionar um novo papel, recurso ou regra de ownership:
 
 1. Se for decisão sem banco, adicione em `policy.ts`.
-2. Se precisar carregar um recurso com verificação de ownership, crie um guard próprio (siga o padrão de `assertAdminAction`).
-3. Se for composição comum de server action, adicione em `action-guards.ts`.
+2. Se for uma permissão granular nova (`recurso:acao`), não precisa mexer em código de policy — só adicionar a string em `Role.permissoes` e proteger a action com `assertCurrentUserCan` (veja "Como incluir uma nova permissão" acima).
+3. Se precisar carregar um recurso com verificação de ownership, crie um guard próprio (siga o padrão de `assertAdminAction`).
+4. Se for composição comum de server action, adicione em `action-guards.ts` ou `permission-guard.ts`, conforme o mecanismo (papel ou permissão).

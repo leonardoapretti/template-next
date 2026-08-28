@@ -15,11 +15,11 @@ A sessão usa estratégia `jwt` (sem depender de tabela de sessão no banco). O 
 
 O provider `Credentials` (`auth/index.ts`) valida e-mail/senha com `bcryptjs`, exige e-mail verificado e registra o resultado (sucesso ou falha) em `AuditLog` via `auditLogService`.
 
-O fluxo de UI fica em `app/(auth)/login/`, seguindo o [padrão de formulário](/docs/formularios) do template.
+O fluxo de UI fica em `app/(auth)/login/`, seguindo a variante de [progressive enhancement](/docs/formularios#variante-progressive-enhancement-useactionstate) do padrão de formulário — `useActionState` + `<form action>` nativo, funcional mesmo sem JavaScript.
 
 ## Cadastro e confirmação de e-mail
 
-O cadastro (`app/(auth)/cadastro/`) cria o usuário via `userService.criarUsuario`/`criarUsuarioComConfirmacaoEmail`.
+O cadastro (`app/(auth)/cadastro/`) segue a mesma variante de formulário (progressive enhancement) e cria o usuário via `userService.criarUsuario`/`criarUsuarioComConfirmacaoEmail`.
 
 Em produção, o usuário recebe um e-mail com link de confirmação (`userService.enviarEmailConfirmacaoConta`), usando um `ActionToken` de uso único (`lib/services/actiontoken.service.ts`). Em desenvolvimento (`NODE_ENV=development`), a conta já nasce com e-mail verificado, para agilizar o fluxo local.
 

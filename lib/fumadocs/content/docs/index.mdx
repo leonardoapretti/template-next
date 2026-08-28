@@ -11,7 +11,8 @@ Este template Next.js já vem com um conjunto de serviços de infraestrutura pro
 
 - [Autenticação](/docs/autenticacao) — login com Auth.js (NextAuth), sessão JWT.
 - [Rate limiting](/docs/rate-limiting) — limitação de tentativas em login, cadastro e troca de credenciais.
-- [Controle de acesso](/docs/controle-de-acesso) — motor de RBAC em `lib/access-control`.
+- [Controle de acesso](/docs/controle-de-acesso) — motor de RBAC em `lib/access-control` (papel admin + permissões granulares `recurso:acao`).
+- [Agenda](/docs/agenda) — calendário de eventos (mês/semana/dia), recorrência, exceções e conflito de horário — exemplo completo de feature.
 - [Criptografia](/docs/criptografia) — criptografia/descriptografia de campos sensíveis.
 - [E-mail](/docs/email) — envio de e-mail transacional via Resend.
 - [Logger](/docs/logger) — logs estruturados com Pino.
@@ -24,10 +25,11 @@ Este template Next.js já vem com um conjunto de serviços de infraestrutura pro
 
 - `/` — rota pública.
 - `/dashboard` — rota protegida por autenticação.
-- `/admin` — rota protegida por RBAC (exige `isAdmin`).
+- `/admin` — rota protegida por RBAC (exige `isAdmin`); hoje só uma tela informativa, as funcionalidades de admin vivem no dashboard (abaixo).
+- `/agenda` — calendário de eventos, rota própria fora do dashboard (ver [Agenda](/docs/agenda)).
 - `/dashboard/produtos/exemplo` — página de detalhes de um recurso mockado, exemplo do padrão `PaginaDetalhes`.
 - `/cadastro` e `/login` — cadastro e autenticação.
 - `/fale-conosco` — formulário público que envia e-mail via Resend.
-- `/admin/emails` — formulário protegido de envio de e-mail via Resend.
+- `/dashboard/emails` — formulário de envio de e-mail via Resend, restrito a admin.
 - `/docs` — esta documentação, pública.
-- `/admin/docs` — mesmo conteúdo, servido dentro da área administrativa protegida.
+- `/dashboard/docs` — mesmo conteúdo, servido dentro do dashboard autenticado, restrito a admin.

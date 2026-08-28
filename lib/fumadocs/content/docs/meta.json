@@ -7,6 +7,7 @@
     "autenticacao",
     "rate-limiting",
     "controle-de-acesso",
+    "agenda",
     "criptografia",
     "email",
     "logger",
