@@ -95,9 +95,11 @@ function DialogDrawerContent({
     const drawerProps = props as React.ComponentProps<typeof DrawerContent>;
 
     return (
-      <DrawerContent className={cn("max-h-[calc(100dvh-1rem)]", className)} {...drawerProps}>
+      <DrawerContent className={cn("max-h-[calc(100svh-1rem)]", className)} {...drawerProps}>
         <ScrollArea className="min-h-0 flex-1">
-          <div className="grid gap-4 p-4">{children}</div>
+          <div className="grid gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            {children}
+          </div>
         </ScrollArea>
 
         {showCloseButton && (
@@ -126,20 +128,20 @@ function DialogDrawerHeader({ className, ...props }: React.ComponentProps<typeof
   const isMobile = useDialogDrawerIsMobile();
 
   if (isMobile) {
-    return <DrawerHeader className={cn("pr-8", className)} {...props} />;
+    return <DrawerHeader className={cn("px-0 pr-8", className)} {...props} />;
   }
 
   return <DialogHeader className={className} {...props} />;
 }
 
-function DialogDrawerFooter(props: React.ComponentProps<typeof DialogFooter>) {
+function DialogDrawerFooter({ className, ...props }: React.ComponentProps<typeof DialogFooter>) {
   const isMobile = useDialogDrawerIsMobile();
 
   if (isMobile) {
-    return <DrawerFooter {...props} />;
+    return <DrawerFooter className={cn("px-0", className)} {...props} />;
   }
 
-  return <DialogFooter {...props} />;
+  return <DialogFooter className={className} {...props} />;
 }
 
 function DialogDrawerTitle(props: React.ComponentProps<typeof DialogTitle>) {
@@ -209,9 +211,11 @@ function AlertDialogDrawerContent({
     const drawerProps = props as React.ComponentProps<typeof DrawerContent>;
 
     return (
-      <DrawerContent className={cn("max-h-[calc(100dvh-1rem)]", className)} {...drawerProps}>
+      <DrawerContent className={cn("max-h-[calc(100svh-1rem)]", className)} {...drawerProps}>
         <ScrollArea className="min-h-0 flex-1">
-          <div className="grid gap-4 p-4">{children}</div>
+          <div className="grid gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            {children}
+          </div>
         </ScrollArea>
       </DrawerContent>
     );
@@ -228,7 +232,7 @@ function AlertDialogDrawerHeader(props: React.ComponentProps<typeof AlertDialogH
   const isMobile = useDialogDrawerIsMobile();
 
   if (isMobile) {
-    return <DrawerHeader className={cn("text-center", props.className)} {...props} />;
+    return <DrawerHeader className={cn("px-0 text-center", props.className)} {...props} />;
   }
 
   return <AlertDialogHeader {...props} />;
@@ -238,7 +242,7 @@ function AlertDialogDrawerFooter(props: React.ComponentProps<typeof AlertDialogF
   const isMobile = useDialogDrawerIsMobile();
 
   if (isMobile) {
-    return <DrawerFooter className={cn("pt-0", props.className)} {...props} />;
+    return <DrawerFooter className={cn("px-0 pt-0", props.className)} {...props} />;
   }
 
   return <AlertDialogFooter {...props} />;
