@@ -1,4 +1,5 @@
 import type { Sidebar } from "../ui/sidebar";
+import type { SidebarLayoutEmpresaInfo, SidebarLayoutEmpresaOpcao } from "./layout";
 
 export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -7,4 +8,6 @@ export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     image?: string | null;
   };
   isAdmin: boolean;
+  empresaInfo?: SidebarLayoutEmpresaInfo | null;
+  empresasDisponiveis?: SidebarLayoutEmpresaOpcao[];
 }

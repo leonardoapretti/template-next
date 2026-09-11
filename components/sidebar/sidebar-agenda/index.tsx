@@ -16,7 +16,7 @@ const navMain = [
     isActive: true,
     items: [
       {
-        title: "Meus eventos",
+        title: "Eventos da empresa",
         url: "/agenda",
       },
     ],
@@ -50,7 +50,7 @@ const navMainAdmin = [
   },
 ];
 
-export function AgendaSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
+export function AgendaSidebar({ user, isAdmin, empresaInfo, empresasDisponiveis, ...props }: AppSidebarProps) {
   const bottomNavItems: React.ComponentProps<typeof SidebarBottomNav>["items"] = [
     { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
     { title: "Agenda", url: "/agenda", icon: <CalendarDaysIcon />, highlight: true },
@@ -61,7 +61,12 @@ export function AgendaSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
   return (
     <>
       <Sidebar collapsible="icon" {...props}>
-        <NavbarHeader perfilAtual="agenda" isAdmin={isAdmin} />
+        <NavbarHeader
+          empresaInfo={empresaInfo}
+          empresasDisponiveis={empresasDisponiveis}
+          isAdmin={isAdmin}
+          perfilAtual="agenda"
+        />
 
         <SidebarContent>
           <NavMain items={isAdmin ? [...navMain, ...navMainAdmin] : navMain} label="Navegação" />

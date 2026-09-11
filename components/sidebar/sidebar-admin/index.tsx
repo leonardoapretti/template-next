@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, LayoutDashboardIcon, MenuIcon } from "lucide-react";
+import { CreditCardIcon, Home, LayoutDashboardIcon, MenuIcon } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
 import type { AppSidebarProps } from "../interfaces";
 import { NavMain } from "../nav-main";
@@ -23,6 +23,18 @@ const data = {
       ],
     },
     {
+      title: "Planos",
+      url: "/admin/planos",
+      icon: <CreditCardIcon />,
+      isActive: false,
+      items: [
+        {
+          title: "Planos e permissões",
+          url: "/admin/planos",
+        },
+      ],
+    },
+    {
       title: "Dashboard",
       url: "/dashboard",
       icon: <LayoutDashboardIcon />,
@@ -37,7 +49,7 @@ const data = {
   ],
 };
 
-export function AdminSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
+export function AdminSidebar({ user, isAdmin, empresaInfo, empresasDisponiveis, ...props }: AppSidebarProps) {
   const bottomNavItems: React.ComponentProps<typeof SidebarBottomNav>["items"] = [
     { title: "Início", url: "/admin", icon: <Home />, highlight: true },
     { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
@@ -47,7 +59,12 @@ export function AdminSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
   return (
     <>
       <Sidebar collapsible="icon" {...props}>
-        <NavbarHeader perfilAtual="admin" isAdmin={isAdmin} />
+        <NavbarHeader
+          empresaInfo={empresaInfo}
+          empresasDisponiveis={empresasDisponiveis}
+          isAdmin={isAdmin}
+          perfilAtual="admin"
+        />
 
         <SidebarContent>
           <NavMain items={data.navMain} />

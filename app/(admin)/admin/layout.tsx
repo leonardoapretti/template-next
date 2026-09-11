@@ -12,7 +12,14 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
 
   return (
     <SidebarLayout
-      renderSidebar={(user, isAdmin) => <AdminSidebar user={user} isAdmin={isAdmin} />}
+      renderSidebar={(user, isAdmin, empresaInfo, empresasDisponiveis) => (
+        <AdminSidebar
+          empresaInfo={empresaInfo}
+          empresasDisponiveis={empresasDisponiveis}
+          isAdmin={isAdmin}
+          user={user}
+        />
+      )}
     >
       {children}
     </SidebarLayout>

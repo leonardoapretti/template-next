@@ -13,7 +13,16 @@ export default async function DashboardLayout({
   }
 
   return (
-    <SidebarLayout renderSidebar={(user, isAdmin) => <UserSidebar user={user} isAdmin={isAdmin} />}>
+    <SidebarLayout
+      renderSidebar={(user, isAdmin, empresaInfo, empresasDisponiveis) => (
+        <UserSidebar
+          empresaInfo={empresaInfo}
+          empresasDisponiveis={empresasDisponiveis}
+          isAdmin={isAdmin}
+          user={user}
+        />
+      )}
+    >
       {children}
     </SidebarLayout>
   );

@@ -2,7 +2,9 @@
 
 import {
   BookOpen,
+  Building2Icon,
   CalendarDaysIcon,
+  KeyRoundIcon,
   LayoutDashboardIcon,
   MailIcon,
   MenuIcon,
@@ -36,8 +38,40 @@ const navMain = [
     isActive: false,
     items: [
       {
-        title: "Meus eventos",
+        title: "Eventos da empresa",
         url: "/agenda",
+      },
+    ],
+  },
+  {
+    title: "Empresa",
+    url: "/dashboard/empresa",
+    icon: <Building2Icon />,
+    isActive: false,
+    items: [
+      {
+        title: "Dados da empresa",
+        url: "/dashboard/empresa",
+      },
+      {
+        title: "Membros",
+        url: "/dashboard/empresa/membros",
+      },
+      {
+        title: "Perfis",
+        url: "/dashboard/empresa/papeis",
+      },
+    ],
+  },
+  {
+    title: "Exemplos de permissões",
+    url: "/dashboard/exemplos",
+    icon: <KeyRoundIcon />,
+    isActive: false,
+    items: [
+      {
+        title: "Motor de permissões",
+        url: "/dashboard/exemplos",
       },
     ],
   },
@@ -82,7 +116,7 @@ const navMainAdmin = [
   },
 ];
 
-export function UserSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
+export function UserSidebar({ user, isAdmin, empresaInfo, empresasDisponiveis, ...props }: AppSidebarProps) {
   // Início e Menu são fixos nas pontas; Agenda fica sempre em destaque no
   // centro (é a funcionalidade principal do app). Conta só entra quando há
   // um quarto destino real (isAdmin) pra manter a quantidade de botões ímpar
@@ -98,7 +132,12 @@ export function UserSidebar({ user, isAdmin, ...props }: AppSidebarProps) {
   return (
     <>
       <Sidebar collapsible="icon" {...props}>
-        <NavbarHeader perfilAtual="usuario" isAdmin={isAdmin} />
+        <NavbarHeader
+          empresaInfo={empresaInfo}
+          empresasDisponiveis={empresasDisponiveis}
+          isAdmin={isAdmin}
+          perfilAtual="usuario"
+        />
 
         <SidebarContent>
           <NavMain items={isAdmin ? [...navMain, ...navMainAdmin] : navMain} label="Navegação" />

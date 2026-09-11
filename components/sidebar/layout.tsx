@@ -4,6 +4,7 @@ import { BreadcrumbLabelsProvider } from "@/components/app-breadcrumbs/breadcrum
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { getAccessContext } from "@/lib/access-control";
+import { empresaService } from "@/lib/services/empresa.service";
 
 export type SidebarLayoutUser = {
   name?: string | null;
@@ -11,9 +12,28 @@ export type SidebarLayoutUser = {
   image?: string | null;
 };
 
+// Empresa ativa da sessão — alimenta o cabeçalho do sidebar (nome +
+// papel atual), análogo ao "clinicaInfo" do dropdown de troca de clínica
+// de outros apps do mesmo padrão.
+export type SidebarLayoutEmpresaInfo = {
+  nome: string;
+  roleNome: string;
+};
+
+export type SidebarLayoutEmpresaOpcao = {
+  id: string;
+  nome: string;
+  ativa: boolean;
+};
+
 type SidebarLayoutProps = Readonly<{
   children: React.ReactNode;
-  renderSidebar: (user: SidebarLayoutUser | undefined, isAdmin: boolean) => React.ReactNode;
+  renderSidebar: (
+    user: SidebarLayoutUser | undefined,
+    isAdmin: boolean,
+    empresaInfo?: SidebarLayoutEmpresaInfo | null,
+    empresasDisponiveis?: SidebarLayoutEmpresaOpcao[],
+  ) => React.ReactNode;
   content?: "default" | "custom";
 }>;
 
@@ -25,10 +45,25 @@ export default async function SidebarLayout({
   const session = await auth();
   const ctx = session?.user?.id ? await getAccessContext().catch(() => null) : null;
 
+  const empresasResponse = ctx ? await empresaService.listarDoUsuario(ctx.usuarioId) : null;
+  const empresasDisponiveis: SidebarLayoutEmpresaOpcao[] = empresasResponse?.isSuccess()
+    ? empresasResponse.data.map(({ empresa }) => ({
+        id: empresa.id,
+        nome: empresa.nome,
+        ativa: empresa.id === ctx?.membroEmpresa?.empresaId,
+      }))
+    : [];
+
+  const empresaAtiva = empresasDisponiveis.find((empresa) => empresa.ativa) ?? null;
+  const empresaInfo: SidebarLayoutEmpresaInfo | null =
+    empresaAtiva && ctx?.membroEmpresa
+      ? { nome: empresaAtiva.nome, roleNome: ctx.membroEmpresa.roleNome }
+      : null;
+
   return (
     <SidebarProvider>
       <BreadcrumbLabelsProvider>
-        {renderSidebar(session?.user, ctx?.isAdmin ?? false)}
+        {renderSidebar(session?.user, ctx?.isAdmin ?? false, empresaInfo, empresasDisponiveis)}
 
         {content === "custom" ? (
           children
