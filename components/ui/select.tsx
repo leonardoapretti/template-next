@@ -2,10 +2,63 @@
 
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Select = SelectPrimitive.Root;
+// Ao contrário do Radix, o Select do base-ui não descobre sozinho o label
+// de cada opção a partir dos `SelectItem` filhos — sem a prop `items`
+// (Record<valor, label>), `Select.Value` cai no fallback de serializar o
+// próprio valor (o id), que é o bug relatado (convidar membro, papel na
+// tabela de membros etc. mostrando o id em vez do nome). Em vez de exigir
+// que cada tela monte esse mapa manualmente, derivamos `items` aqui a
+// partir dos `SelectItem` já renderizados como children — cobre o padrão
+// usado em todo o app (`<SelectItem value={id}>{label}</SelectItem>`) sem
+// mudar nenhum call site.
+function coletarItensDoSelect(node: React.ReactNode, itens: Record<string, React.ReactNode>) {
+  React.Children.forEach(node, (child) => {
+    if (!React.isValidElement(child)) {
+      return;
+    }
+
+    if (child.type === SelectItem) {
+      const props = child.props as { value?: unknown; children?: React.ReactNode };
+
+      if (props.value !== undefined && props.value !== null && typeof props.children === "string") {
+        itens[String(props.value)] = props.children;
+      }
+
+      return;
+    }
+
+    const filhos = (child.props as { children?: React.ReactNode } | null)?.children;
+
+    if (filhos) {
+      coletarItensDoSelect(filhos, itens);
+    }
+  });
+}
+
+function Select<Value = string, Multiple extends boolean | undefined = false>({
+  children,
+  items,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const itensDerivados = React.useMemo(() => {
+    if (items) {
+      return items;
+    }
+
+    const coletados: Record<string, React.ReactNode> = {};
+    coletarItensDoSelect(children, coletados);
+    return coletados;
+  }, [children, items]);
+
+  return (
+    <SelectPrimitive.Root items={itensDerivados} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  );
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
