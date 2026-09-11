@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "./actions";
 
-export function LoginForm({ retorno }: { retorno?: string }) {
+export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; retorno?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, null);
   const lastToastedError = useRef<string | null>(null);
 
@@ -50,6 +50,7 @@ export function LoginForm({ retorno }: { retorno?: string }) {
               autoComplete="username"
               placeholder="seu@email.com"
               className="h-11 pl-9 text-sm"
+              defaultValue={emailPadrao}
               required
             />
           </div>
@@ -99,7 +100,11 @@ export function LoginForm({ retorno }: { retorno?: string }) {
         className="mt-3 h-11 w-full"
         nativeButton={false}
         variant="outline"
-        render={<Link href="/cadastro">Cadastre-se</Link>}
+        render={
+          <Link href={retorno ? `/cadastro?retorno=${encodeURIComponent(retorno)}` : "/cadastro"}>
+            Cadastre-se
+          </Link>
+        }
       />
 
       <p className="mt-8 text-center text-xs leading-relaxed text-muted-foreground">

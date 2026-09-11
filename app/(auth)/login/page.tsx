@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; retorno?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; retorno?: string; email?: string }>;
 }) {
   const session = await auth();
 
@@ -19,7 +19,7 @@ export default async function LoginPage({
     redirect("/dashboard");
   }
 
-  const { callbackUrl, retorno } = await searchParams;
+  const { callbackUrl, retorno, email } = await searchParams;
   return (
     <main className="flex min-h-screen">
       {/* Painel esquerdo */}
@@ -68,7 +68,7 @@ export default async function LoginPage({
 
       {/* Painel direito */}
       <div className="flex w-full items-center justify-center p-10 lg:w-1/2">
-        <LoginForm retorno={callbackUrl ?? retorno} />
+        <LoginForm emailPadrao={email} retorno={callbackUrl ?? retorno} />
       </div>
     </main>
   );

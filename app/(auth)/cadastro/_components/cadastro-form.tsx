@@ -9,7 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cadastrarAction } from "./actions";
 
-export function CadastroForm() {
+export function CadastroForm({
+  conviteToken,
+  emailPadrao,
+  retorno,
+}: {
+  conviteToken?: string;
+  emailPadrao?: string;
+  retorno?: string;
+}) {
   const [state, formAction, pending] = useActionState(cadastrarAction, null);
 
   return (
@@ -22,6 +30,9 @@ export function CadastroForm() {
       </div>
 
       <form className="space-y-4" action={formAction}>
+        <input type="hidden" name="retorno" value={retorno ?? ""} />
+        <input type="hidden" name="conviteToken" value={conviteToken ?? ""} />
+
         <Campo label="Nome completo" error={state?.fieldErrors?.nome?.[0]} icon={<UserRound />}>
           <Input id="nome" name="nome" autoComplete="name" placeholder="Seu nome" required />
         </Campo>
@@ -33,6 +44,8 @@ export function CadastroForm() {
             autoComplete="email"
             type="email"
             placeholder="seu@email.com"
+            defaultValue={emailPadrao}
+            readOnly={Boolean(conviteToken)}
             required
           />
         </Campo>
@@ -75,7 +88,10 @@ export function CadastroForm() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Já possui conta?{" "}
-        <Link className="text-primary hover:underline" href="/login">
+        <Link
+          className="text-primary hover:underline"
+          href={retorno ? `/login?retorno=${encodeURIComponent(retorno)}` : "/login"}
+        >
           Entrar
         </Link>
       </p>

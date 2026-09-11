@@ -7,12 +7,18 @@ import { CadastroForm } from "./_components/cadastro-form";
 
 export const metadata: Metadata = { title: "Cadastre-se | Template" };
 
-export default async function CadastroPage() {
+export default async function CadastroPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ retorno?: string; email?: string; convite?: string }>;
+}) {
   const session = await auth();
   if (session) {
     redirect("/dashboard?jaLogado=1");
   }
   await connection();
+
+  const { retorno, email, convite } = await searchParams;
 
   return (
     <main className="flex min-h-screen">
@@ -35,7 +41,7 @@ export default async function CadastroPage() {
         </div>
       </div>
       <div className="flex w-full items-center justify-center p-6 sm:p-10 lg:w-1/2">
-        <CadastroForm />
+        <CadastroForm conviteToken={convite} emailPadrao={email} retorno={retorno} />
       </div>
     </main>
   );

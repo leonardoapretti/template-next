@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { actionTokenService } from "@/lib/services/actiontoken.service";
 import { auditLogService } from "@/lib/services/audit-log.service";
 import { userService } from "@/lib/services/user.service";
 import { verificarRateLimit } from "@/lib/utils/rate-limit";
@@ -60,17 +61,40 @@ export async function cadastrarAction(
 
   const senha = await bcrypt.hash(parsed.data.senha, 12);
   const isDevelopment = process.env.NODE_ENV === "development";
+  const retorno = formData.get("retorno");
+  const retornoQuery =
+    typeof retorno === "string" && retorno.startsWith("/")
+      ? `?retorno=${encodeURIComponent(retorno)}`
+      : "";
+
+  const emailCadastro = parsed.data.email.trim().toLowerCase();
+
+  // Clicar no link do convite já prova posse do e-mail (só chega na caixa
+  // de entrada de quem foi convidado) — equivalente à confirmação por
+  // e-mail, então dispensa pedir de novo. Revalida o token no servidor
+  // (hash, validade, não usado/revogado) e confere que o e-mail do
+  // cadastro bate exatamente com o do convite; nunca confia só no
+  // parâmetro vindo do client.
+  const conviteToken = formData.get("conviteToken");
+  const convite =
+    typeof conviteToken === "string" && conviteToken.length > 0
+      ? await actionTokenService.buscarValido({
+          token: conviteToken,
+          tipo: "CONVITE_MEMBRO_EMPRESA",
+        })
+      : null;
+  const emailConfirmadoPeloConvite = convite?.email?.toLowerCase() === emailCadastro;
 
   const dadosUsuario = {
     nome: parsed.data.nome,
-    email: parsed.data.email.trim().toLowerCase(),
+    email: emailCadastro,
     senha,
-    emailVerificadoEm: isDevelopment ? new Date() : null,
+    emailVerificadoEm: isDevelopment || emailConfirmadoPeloConvite ? new Date() : null,
   };
 
   let destino: string;
 
-  if (isDevelopment) {
+  if (isDevelopment || emailConfirmadoPeloConvite) {
     const response = await userService.criarUsuario(dadosUsuario);
 
     if (!response.isSuccess()) {
@@ -96,7 +120,7 @@ export async function cadastrarAction(
       db,
     );
 
-    destino = "/login";
+    destino = `/login${retornoQuery}`;
   } else {
     const response = await userService.criarUsuarioComConfirmacaoEmail(dadosUsuario);
 
