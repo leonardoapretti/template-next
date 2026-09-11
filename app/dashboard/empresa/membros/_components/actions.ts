@@ -36,6 +36,10 @@ export async function convidarMembroAction(input: unknown) {
     convidadoPorNome: session?.user?.nome ?? "Um administrador",
   });
 
+  if (response.isSuccess()) {
+    revalidatePath("/dashboard/empresa/membros");
+  }
+
   return response.serialize();
 }
 
@@ -105,6 +109,73 @@ export async function inativarMembroAction(input: unknown) {
     ctx.membroEmpresa.empresaId,
     parsed.data.membroId,
     ctx.usuarioId,
+  );
+
+  if (response.isSuccess()) {
+    revalidatePath("/dashboard/empresa/membros");
+  }
+
+  return response.serialize();
+}
+
+const conviteSchema = z.object({ actionTokenId: z.string().min(1) });
+
+export async function revogarConviteAction(input: unknown) {
+  const parsed = conviteSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return DataBaseResponse.error({
+      code: "VALIDATION_ERROR",
+      message: "Dados inválidos.",
+    }).serialize();
+  }
+
+  const ctx = await assertCurrentUserCan("empresa:convidar");
+
+  if (!ctx.membroEmpresa) {
+    return DataBaseResponse.error({
+      code: "EMPRESA_REQUIRED",
+      message: "Nenhuma empresa ativa.",
+    }).serialize();
+  }
+
+  const response = await empresaService.revogarConvite(
+    ctx.membroEmpresa.empresaId,
+    parsed.data.actionTokenId,
+  );
+
+  if (response.isSuccess()) {
+    revalidatePath("/dashboard/empresa/membros");
+  }
+
+  return response.serialize();
+}
+
+export async function reenviarConviteAction(input: unknown) {
+  const parsed = conviteSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return DataBaseResponse.error({
+      code: "VALIDATION_ERROR",
+      message: "Dados inválidos.",
+    }).serialize();
+  }
+
+  const ctx = await assertCurrentUserCan("empresa:convidar");
+
+  if (!ctx.membroEmpresa) {
+    return DataBaseResponse.error({
+      code: "EMPRESA_REQUIRED",
+      message: "Nenhuma empresa ativa.",
+    }).serialize();
+  }
+
+  const session = await auth();
+
+  const response = await empresaService.reenviarConvite(
+    ctx.membroEmpresa.empresaId,
+    parsed.data.actionTokenId,
+    session?.user?.nome ?? "Um administrador",
   );
 
   if (response.isSuccess()) {

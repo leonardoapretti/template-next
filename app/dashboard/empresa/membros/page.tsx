@@ -6,7 +6,7 @@ import { canUseFeature, getAccessContext } from "@/lib/access-control";
 import { empresaService } from "@/lib/services/empresa.service";
 import { roleService } from "@/lib/services/role.service";
 import { ConvidarMembroForm } from "./_components/convidar-membro-form";
-import { MembrosTable } from "./_components/membros-table";
+import { type MembroRow, MembrosTable } from "./_components/membros-table";
 
 export const metadata: Metadata = {
   title: "Membros da empresa | Template",
@@ -19,12 +19,14 @@ export default async function MembrosEmpresaPage() {
     redirect("/dashboard");
   }
 
-  const [membrosResponse, rolesResponse] = await Promise.all([
+  const [membrosResponse, convitesResponse, rolesResponse] = await Promise.all([
     empresaService.listarMembros(ctx.membroEmpresa.empresaId),
+    empresaService.listarConvitesPendentes(ctx.membroEmpresa.empresaId),
     roleService.listarTodos(),
   ]);
 
   const membros = membrosResponse.isSuccess() ? membrosResponse.data : [];
+  const convitesPendentes = convitesResponse.isSuccess() ? convitesResponse.data : [];
   const roles = rolesResponse.isSuccess() ? rolesResponse.data : [];
 
   const podeConvidar = canUseFeature(ctx, "empresa:convidar");
@@ -44,15 +46,31 @@ export default async function MembrosEmpresaPage() {
 
       <PageSection title="Membros">
         <MembrosTable
-          membros={membros.map((membro) => ({
-            id: membro.id,
-            usuarioId: membro.usuarioId,
-            nome: membro.usuario.nome,
-            email: membro.usuario.email,
-            roleId: membro.role.id,
-            roleNome: membro.role.nome,
-            ativo: membro.ativo,
-          }))}
+          membros={[
+            ...membros.map(
+              (membro): MembroRow => ({
+                id: membro.id,
+                usuarioId: membro.usuarioId,
+                nome: membro.usuario.nome,
+                email: membro.usuario.email,
+                roleId: membro.role.id,
+                roleNome: membro.role.nome,
+                status: membro.ativo ? "ativo" : "inativo",
+              }),
+            ),
+            ...convitesPendentes.map(
+              (convite): MembroRow => ({
+                id: `convite-${convite.id}`,
+                actionTokenId: convite.id,
+                usuarioId: null,
+                nome: "",
+                email: convite.email ?? "",
+                roleId: convite.role?.id ?? "",
+                roleNome: convite.role?.nome ?? "",
+                status: "convidado",
+              }),
+            ),
+          ]}
           podeGerenciar={podeConvidar}
           roles={roles.map((role) => ({ id: role.id, nome: role.nome }))}
           usuarioAtualId={ctx.usuarioId}

@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ type ConvidarMembroFormProps = {
 };
 
 export function ConvidarMembroForm({ roles }: ConvidarMembroFormProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const form = useForm<ConvidarMembroFormSchema>({
     resolver: zodResolver(convidarMembroSchema),
@@ -53,6 +55,7 @@ export function ConvidarMembroForm({ roles }: ConvidarMembroFormProps) {
     toast.success("Convite enviado por e-mail.");
     form.reset();
     setOpen(false);
+    router.refresh();
   }
 
   return (

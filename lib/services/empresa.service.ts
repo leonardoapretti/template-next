@@ -136,6 +136,30 @@ class EmpresaService {
     );
   }
 
+  // Convites de CONVITE_MEMBRO_EMPRESA ainda pendentes (não aceitos, não
+  // revogados, não expirados) — a tela de membros mostra essas pessoas na
+  // mesma lista com status "Convite enviado", pra quem convidou saber que
+  // já convidou sem precisar ir na tela de e-mails/logs.
+  listarConvitesPendentes(empresaId: string) {
+    return DataBaseResponse.fromPromise(() =>
+      db.actionToken.findMany({
+        where: {
+          tipo: "CONVITE_MEMBRO_EMPRESA",
+          empresaId,
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: {
+          id: true,
+          email: true,
+          role: { select: { id: true, nome: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+    );
+  }
+
   // Troca o papel de um membro da empresa — sempre confirma que o membro
   // pertence à empresa informada antes de escrever, nunca aceitando o
   // vínculo do cliente sem essa checagem.
@@ -242,6 +266,69 @@ class EmpresaService {
       }
 
       return { enviado: true };
+    });
+  }
+
+  // Revoga um convite pendente — nunca aceita revogar um token de outra
+  // empresa (empresaId sempre vem do vínculo ativo de quem chama, nunca do
+  // client) nem um já usado/revogado.
+  revogarConvite(empresaId: string, actionTokenId: string) {
+    return DataBaseResponse.fromPromise(async () => {
+      const actionToken = await db.actionToken.findFirst({
+        where: {
+          id: actionTokenId,
+          empresaId,
+          tipo: "CONVITE_MEMBRO_EMPRESA",
+          usedAt: null,
+          revokedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (!actionToken) {
+        throw new Error("Convite não encontrado ou já respondido.");
+      }
+
+      await db.actionToken.update({
+        where: { id: actionToken.id },
+        data: { revokedAt: new Date() },
+      });
+    });
+  }
+
+  // Reenvia um convite pendente — reaproveita criarConviteEEnviar com o
+  // mesmo e-mail/papel do token atual, que já revoga o token anterior
+  // (revogarAnteriores) antes de criar e enviar o novo, então nunca ficam
+  // dois links válidos ao mesmo tempo.
+  reenviarConvite(empresaId: string, actionTokenId: string, convidadoPorNome: string) {
+    return DataBaseResponse.fromPromise(async () => {
+      const actionToken = await db.actionToken.findFirst({
+        where: {
+          id: actionTokenId,
+          empresaId,
+          tipo: "CONVITE_MEMBRO_EMPRESA",
+          usedAt: null,
+          revokedAt: null,
+        },
+        select: { email: true, roleId: true },
+      });
+
+      if (!actionToken?.email || !actionToken.roleId) {
+        throw new Error("Convite não encontrado ou já respondido.");
+      }
+
+      const resposta = await this.criarConviteEEnviar({
+        empresaId,
+        roleId: actionToken.roleId,
+        email: actionToken.email,
+        convidadoPorNome,
+      });
+
+      if (resposta.isError()) {
+        throw new Error(resposta.getErrorMessage());
+      }
+
+      return resposta.data;
     });
   }
 
