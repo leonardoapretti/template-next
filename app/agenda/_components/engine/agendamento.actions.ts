@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertCurrentUserCan } from "@/lib/access-control";
+import { EmpresaRequiredError } from "@/lib/access-control/errors";
 import { agendamentoService } from "@/lib/services/agendamento.service";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
 import { getEventosNaJanela } from "./agendamento.queries";
@@ -106,7 +107,13 @@ export async function criarEventoAction(input: unknown) {
     titulo: normalizarTituloEvento(parsed.data),
   };
 
-  const conflitos = await agendamentoService.listarConflitosNoHorario(ctx.usuarioId, data);
+  if (!ctx.membroEmpresa) {
+    throw new EmpresaRequiredError();
+  }
+
+  const empresaId = ctx.membroEmpresa.empresaId;
+
+  const conflitos = await agendamentoService.listarConflitosNoHorario(empresaId, data);
 
   if (conflitos.length > 0 && !data.confirmarConflito) {
     return {
@@ -117,7 +124,7 @@ export async function criarEventoAction(input: unknown) {
   }
 
   const response = await DataBaseResponse.fromPromise(async () => {
-    await agendamentoService.criarEvento(ctx.usuarioId, data);
+    await agendamentoService.criarEvento(empresaId, data);
     return null;
   });
 
@@ -154,7 +161,13 @@ export async function atualizarEventoAction(input: unknown) {
     titulo: normalizarTituloEvento(parsed.data),
   };
 
-  const conflitos = await agendamentoService.listarConflitosNoHorario(ctx.usuarioId, data);
+  if (!ctx.membroEmpresa) {
+    throw new EmpresaRequiredError();
+  }
+
+  const empresaId = ctx.membroEmpresa.empresaId;
+
+  const conflitos = await agendamentoService.listarConflitosNoHorario(empresaId, data);
 
   if (conflitos.length > 0 && !data.confirmarConflito) {
     return {
@@ -165,7 +178,7 @@ export async function atualizarEventoAction(input: unknown) {
   }
 
   const response = await DataBaseResponse.fromPromise(async () => {
-    await agendamentoService.atualizarEvento(ctx.usuarioId, data);
+    await agendamentoService.atualizarEvento(empresaId, data);
     return null;
   });
 
@@ -196,8 +209,14 @@ export async function excluirEventoAction(input: unknown) {
     };
   }
 
+  if (!ctx.membroEmpresa) {
+    throw new EmpresaRequiredError();
+  }
+
+  const empresaId = ctx.membroEmpresa.empresaId;
+
   const response = await DataBaseResponse.fromPromise(async () => {
-    await agendamentoService.excluirEvento(ctx.usuarioId, parsed.data);
+    await agendamentoService.excluirEvento(empresaId, parsed.data);
     return null;
   });
 

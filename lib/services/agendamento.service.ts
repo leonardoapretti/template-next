@@ -64,10 +64,10 @@ function normalizarEventoInput(input: CriarEventoInput) {
 }
 
 class AgendamentoService {
-  async buscarEventosNaJanela(userId: string, janela: JanelaAgendamento) {
+  async buscarEventosNaJanela(empresaId: string, janela: JanelaAgendamento) {
     return db.evento.findMany({
       where: {
-        userId,
+        empresaId,
         data: {
           lte: janela.fim,
         },
@@ -99,20 +99,20 @@ class AgendamentoService {
     });
   }
 
-  async criarEvento(userId: string, input: CriarEventoInput) {
+  async criarEvento(empresaId: string, input: CriarEventoInput) {
     const data = normalizarEventoInput(input);
 
     return db.evento.create({
       data: {
         ...data,
-        userId,
+        empresaId,
       },
     });
   }
 
-  async atualizarEvento(userId: string, input: AtualizarEventoInput) {
+  async atualizarEvento(empresaId: string, input: AtualizarEventoInput) {
     const evento = await db.evento.findFirstOrThrow({
-      where: { id: input.id, userId },
+      where: { id: input.id, empresaId },
     });
 
     const data = normalizarEventoInput(input);
@@ -130,7 +130,7 @@ class AgendamentoService {
       return this.atualizarSomenteOcorrencia(input);
     }
 
-    return this.atualizarDaquiPraFrente(evento, input, userId);
+    return this.atualizarDaquiPraFrente(evento, input, empresaId);
   }
 
   private atualizarSomenteOcorrencia(input: AtualizarEventoInput) {
@@ -173,7 +173,7 @@ class AgendamentoService {
   private atualizarDaquiPraFrente(
     evento: { id: string; data: string },
     input: AtualizarEventoInput,
-    userId: string,
+    empresaId: string,
   ) {
     const dataOriginal = input.dataOriginal ?? input.data;
     const data = normalizarEventoInput(input);
@@ -220,15 +220,15 @@ class AgendamentoService {
       db.evento.create({
         data: {
           ...data,
-          userId,
+          empresaId,
         },
       }),
     ]);
   }
 
-  async excluirEvento(userId: string, input: ExcluirEventoInput) {
+  async excluirEvento(empresaId: string, input: ExcluirEventoInput) {
     const evento = await db.evento.findFirstOrThrow({
-      where: { id: input.id, userId },
+      where: { id: input.id, empresaId },
     });
 
     if (evento.recorrencia === "NENHUMA" || !input.escopoRecorrencia || !input.dataOriginal) {
@@ -293,7 +293,7 @@ class AgendamentoService {
    * nada, na mesma lógica que o Google Calendar usa.
    */
   async listarConflitosNoHorario(
-    userId: string,
+    empresaId: string,
     input: {
       eventoId?: string;
       data: string;
@@ -310,7 +310,7 @@ class AgendamentoService {
     const horaInicio = input.horaInicio;
     const horaFim = input.horaFim;
 
-    const eventos = await this.buscarEventosNaJanela(userId, {
+    const eventos = await this.buscarEventosNaJanela(empresaId, {
       inicio: input.data,
       fim: input.data,
     });
