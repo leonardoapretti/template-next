@@ -37,7 +37,7 @@ A maioria dos boilerplates de Next.js resolve só o "hello world". Este resolve 
 | --- | --- | --- |
 | 🔐 **Autenticação** | Login por credenciais via [Auth.js](https://authjs.dev) (NextAuth), sessão JWT, cadastro com verificação de e-mail, redefinição de senha e troca de e-mail (confirmadas por link tokenizado) | `auth/`, `app/(auth)/`, `app/dashboard/conta/` |
 | 🚦 **Rate limiting** | Limite de tentativas em login, cadastro, reenvio de e-mail e troca de senha/e-mail | `lib/utils/rate-limit.ts` |
-| 🛡️ **Controle de acesso (RBAC)** | Motor de permissões por papel (`isAdmin`), guards reutilizáveis para server actions e rotas | `lib/access-control/` |
+| 🛡️ **Controle de acesso (RBAC multi-tenant)** | Motor de permissões por empresa (`Empresa`/`MembroEmpresa`, um usuário pode estar em várias), papéis customizáveis por empresa, teto de features por plano de assinatura, convite de membro por e-mail, guards reutilizáveis para server actions e rotas | `lib/access-control/`, `app/dashboard/empresa*`, `app/(admin)/admin/planos` |
 | 🔑 **Criptografia** | Campos sensíveis cifrados em repouso (AES-256-GCM) de forma transparente, via extensão do Prisma Client | `lib/services/crypto/` |
 | 📝 **Trilha de auditoria** | Log append-only com cadeia de hash, resistente a adulteração retroativa, captura automática de escritas sensíveis | `lib/services/audit-log*.ts` |
 | ✉️ **E-mail transacional** | Envio de e-mails via [Resend](https://resend.com), com template HTML reutilizável | `lib/services/email.service.ts`, `lib/email/` |

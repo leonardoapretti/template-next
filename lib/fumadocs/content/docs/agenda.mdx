@@ -5,7 +5,7 @@ docId: agenda
 icon: CalendarDays
 ---
 
-A agenda é um exemplo completo de feature do template: calendário de eventos com visões de mês, semana e dia, eventos recorrentes, exceções pontuais, eventos de período (vários dias) e dia inteiro, detecção de conflito de horário e controle de acesso granular. Vive em rota própria (`app/agenda`), fora do dashboard, com layout e sidebar dedicados (`AgendaSidebar`) — o mesmo padrão de área independente que `app/dashboard` e `app/(admin)/admin` já seguem, cada uma com seu próprio `SidebarLayout`.
+A agenda é um exemplo completo de feature do template: calendário de eventos com visões de mês, semana e dia, eventos recorrentes, exceções pontuais, eventos de período (vários dias) e dia inteiro, detecção de conflito de horário e controle de acesso granular. Vive em rota própria (`app/agenda`), fora do dashboard, com layout e sidebar dedicados (`AgendaSidebar`) — o mesmo padrão de área independente que `app/dashboard` e `app/(admin)/admin` já seguem, cada uma com seu próprio `SidebarLayout`. É também o exemplo real de recurso escopado a uma empresa (não a um usuário) no modelo multi-tenant — ver [Empresas e multi-tenant](/docs/empresas).
 
 ## Onde fica
 
@@ -37,7 +37,7 @@ model Evento {
   recorrencia    FrequenciaEvento @default(NENHUMA) // NENHUMA | DIARIA | SEMANAL | MENSAL | ANUAL
   recorrenciaAte String?
   observacao     String?
-  userId         String
+  empresaId      String           // Evento pertence a uma Empresa, não a um User
   excecoes       EventoExcecao[]
 }
 
@@ -64,7 +64,7 @@ Datas e horários são strings (`"YYYY-MM-DD"`, `"HH:mm"`), não `DateTime` — 
 
 ## Conflito de horário
 
-Antes de criar/atualizar um evento, `agendamentoService.listarConflitosNoHorario` verifica se o novo horário colide com outro evento do mesmo usuário. Se houver conflito e o caller não tiver passado `confirmarConflito: true`, a action retorna `{ success: false, type: "conflict", conflitos }` em vez de persistir — o dialog de evento (`evento-dialog/`) usa isso para mostrar os conflitos e pedir confirmação explícita antes de reenviar com `confirmarConflito: true`.
+Antes de criar/atualizar um evento, `agendamentoService.listarConflitosNoHorario` verifica se o novo horário colide com outro evento da mesma empresa. Se houver conflito e o caller não tiver passado `confirmarConflito: true`, a action retorna `{ success: false, type: "conflict", conflitos }` em vez de persistir — o dialog de evento (`evento-dialog/`) usa isso para mostrar os conflitos e pedir confirmação explícita antes de reenviar com `confirmarConflito: true`.
 
 ## Escopo de edição/exclusão em evento recorrente
 
@@ -81,7 +81,7 @@ Cada mutação é protegida por uma permissão granular própria (veja [Controle
 - `agenda:update` — `atualizarEventoAction`.
 - `agenda:delete` — `excluirEventoAction`.
 
-`getOcorrenciasAction` (leitura) não exige permissão granular — só sessão autenticada, garantida pelo layout de `app/agenda`.
+`getOcorrenciasAction` (leitura) não exige permissão granular, mas `app/agenda/layout.tsx` exige uma empresa ativa (`temEmpresaAtiva(ctx)`) — a agenda é uma feature da empresa, não pessoal. Toda mutação também lança `EmpresaRequiredError` sem empresa ativa, mesmo para admin da plataforma: guard de permissão e escopo de tenant são checagens independentes.
 
 ## Estendendo
 

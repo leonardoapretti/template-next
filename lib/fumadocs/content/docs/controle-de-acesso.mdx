@@ -1,52 +1,70 @@
 ---
 title: Controle de acesso
-description: Motor de RBAC do template, em lib/access-control.
+description: Motor de RBAC multi-tenant do template, em lib/access-control.
 docId: controle-de-acesso
 icon: ShieldCheck
 ---
 
 O controle de acesso fica concentrado em `lib/access-control`. Esse diretório reúne as peças que decidem se o usuário atual pode executar uma ação ou acessar um recurso — services de domínio continuam responsáveis pelas regras de negócio, mas validações de acesso reutilizáveis não devem ficar espalhadas em `lib/services`.
 
+O motor é multi-tenant: um usuário pode estar vinculado a várias empresas (`Empresa`/`MembroEmpresa`, ver [Empresas e multi-tenant](/docs/empresas)), cada uma com seus próprios papéis (`Role`) e um plano de assinatura (`Plano`) que funciona como teto de features. Não existe mais papel global do usuário — permissão sempre vem do vínculo com a empresa ativa da sessão.
+
 ## Estrutura
 
-- `context.ts`: monta o `AccessContext` do usuário atual (sessão + papel + permissões).
-- `current-user.ts`: helpers para obter o usuário/contexto atual.
-- `policy.ts`: decisões puras — papel ativo (`canActAs`) e permissão granular (`canUseFeature`).
-- `action-guards.ts`: guard de papel (`assertAdminAction`), usado por server actions.
+- `context.ts`: monta o `AccessContext` do usuário atual (sessão + vínculo com a empresa ativa + permissões do papel + teto do plano).
+- `current-user.ts`: helpers para obter o usuário/contexto atual, incluindo `UsuarioAtualContexto` (usado por `BaseService` para escopar queries por `empresaId`).
+- `policy.ts`: decisões puras — papel ativo (`canActAs`), vínculo com empresa (`temEmpresaAtiva`) e permissão granular (`canUseFeature`).
+- `action-guards.ts`: guards de papel/tenant (`assertAdminAction`, `assertEmpresaAction`, `assertProprietarioEmpresa`), usados por server actions.
 - `permission-guard.ts`: guard de permissão granular (`assertCurrentUserCan`), usado por server actions.
+- `permission-registry.ts`: catálogo único de recursos e operações (`resourceRegistry`/`permissionKeys`) — fonte de verdade das chaves `recurso:acao`, consumida pela tela de papéis, pela tela de planos e pelo componente `PermissionMatrixField`.
 - `errors.ts`: erros padronizados de acesso.
 
 ## AccessContext
 
-`AccessContext` é o objeto base para qualquer decisão de acesso. Contém o usuário atual, se ele é admin e a lista de permissões do papel dele.
+`AccessContext` é o objeto base para qualquer decisão de acesso. Contém o usuário atual, se ele é admin da plataforma e o vínculo dele com a empresa ativa da sessão (ou `null`, se nenhuma).
 
 ```ts
 export type AccessContext = {
   usuarioId: string;
   isAdmin: boolean;
-  permissoes: string[];
+  membroEmpresa: {
+    membroId: string;
+    empresaId: string;
+    roleId: string;
+    roleNome: string;
+    permissoes: string[];
+    permissoesPlano: Record<string, boolean>;
+  } | null;
 };
 ```
 
-`permissoes` vem de `usuario.role.permissoes` (`Role.permissoes`, uma coluna `String[]` no Prisma) — o papel (`Role`) atribuído ao usuário via `User.roleId`. Um usuário sem papel atribuído tem `permissoes: []`.
+- `membroEmpresa` vem do `MembroEmpresa` ativo do usuário para a empresa ativa da sessão (cookie `EMPRESA_ATIVA_COOKIE`, sempre revalidado contra o banco — o cookie nunca é confiado sozinho). Um usuário sem nenhuma empresa (ou sem cookie de empresa ativa válido) tem `membroEmpresa: null`.
+- `permissoes` vem de `role.permissoes` (`Role.permissoes`, uma coluna `String[]` no Prisma) — o papel que o `MembroEmpresa` aponta, escopado à empresa.
+- `permissoesPlano` vem de `planoService.buscarMatriz(empresa.planoId)` — a matriz de features liberadas pelo plano de assinatura da empresa (`empresaId` a partir do plano em `/admin/planos`). Empresa sem `planoId` (`null`) equivale a "tudo liberado", para não travar empresas criadas antes de o teto de plano existir.
 
-Exemplo real: `app/(admin)/admin/layout.tsx` usa `getAccessContext()` e `canActAs(ctx, "ADMIN")` para decidir se o usuário pode entrar na área administrativa, redirecionando para `/dashboard` caso contrário.
+Exemplo real: `app/(admin)/admin/layout.tsx` usa `getAccessContext()` e `canActAs(ctx, "ADMIN")` para decidir se o usuário pode entrar na área administrativa (global, não por empresa), redirecionando para `/dashboard` caso contrário. Já `app/dashboard/empresa/layout.tsx` usa `temEmpresaAtiva(ctx)` para o gate da área de gerenciamento de empresa.
 
-## Dois mecanismos de decisão
+## Três mecanismos de decisão
 
-O motor tem duas camadas, para dois tipos de regra diferentes:
+O motor tem três camadas, para três tipos de regra diferentes:
 
-- **Papel administrativo** (`isAdmin`, binário): decide acesso a áreas/funcionalidades inteiras da aplicação (ex.: `/admin`, `/dashboard/emails`, `/dashboard/docs`). Verificado com `canActAs(ctx, "ADMIN")` / `assertAdminAction`.
-- **Permissão granular** (`recurso:acao`, lista): decide acesso a uma ação específica dentro de um recurso, independente de o usuário ser admin ou não (ex.: `agenda:create`, `agenda:update`, `agenda:delete`). Verificado com `canUseFeature(ctx, permissao)` / `assertCurrentUserCan(permissao)`.
+- **Papel administrativo da plataforma** (`isAdmin`, binário): decide acesso a áreas/funcionalidades globais, fora do escopo de qualquer empresa (ex.: `/admin`, `/admin/planos`). Verificado com `canActAs(ctx, "ADMIN")` / `assertAdminAction`.
+- **Vínculo com empresa** (`membroEmpresa !== null`, binário): decide acesso à área de gerenciamento de uma empresa como um todo, independente do papel específico. Verificado com `temEmpresaAtiva(ctx)` / `assertEmpresaAction`. Há também `canActAs(ctx, "PROPRIETARIO_EMPRESA")` / `assertProprietarioEmpresa`, reservado às ações exclusivas do Proprietário (inativar a empresa, transferir titularidade).
+- **Permissão granular** (`recurso:acao`, lista): decide acesso a uma ação específica dentro de um recurso. Verificado com `canUseFeature(ctx, permissao)` / `assertCurrentUserCan(permissao)`.
 
-Um usuário admin (`ctx.isAdmin === true`) sempre passa em `canUseFeature`, independente do que estiver em `ctx.permissoes` — admin tem acesso irrestrito a qualquer permissão granular.
+`canUseFeature` exige **duas** condições independentes para liberar uma permissão granular:
+
+1. A chave estar em `ctx.membroEmpresa.permissoes` (o papel do usuário na empresa libera) — **exceto** para o papel `"Proprietário"`, que sempre passa nesta camada, mesmo que a chave não esteja gravada em `Role.permissoes` (ver [Empresas e multi-tenant](/docs/empresas) — o Proprietário sempre tem todas as permissões e não é editável em `/dashboard/empresa/papeis`).
+2. A chave estar em `ctx.membroEmpresa.permissoesPlano` (o plano da empresa libera) — **sem exceção**, nem para o Proprietário: o teto de plano vale para qualquer papel.
+
+Um usuário admin da plataforma (`ctx.isAdmin === true`) sempre passa em `canUseFeature`, ignorando as duas camadas — acesso irrestrito, sem depender de vínculo com nenhuma empresa.
 
 ## Fluxo padrão de uma action protegida
 
 1. Validar o input com schema (zod).
-2. Montar `AccessContext` com `getAccessContext()`.
-3. Validar papel com os guards.
-4. Chamar o service.
+2. Montar `AccessContext` com `getAccessContext()` (ou obtê-lo já validado via `assertCurrentUserCan`).
+3. Validar papel/tenant com os guards.
+4. Chamar o service, sempre passando o `empresaId` do contexto — nunca aceitar um `empresaId` vindo do client sem confirmar o vínculo.
 
 ```ts
 "use server";
@@ -76,57 +94,65 @@ export async function exemploAction(input: unknown) {
 }
 ```
 
-## Exemplo real: permissão granular (`agenda:*`)
+## Exemplo real: permissão granular escopada por empresa (`agenda:*`)
 
-`app/agenda/_components/engine/agendamento.actions.ts` protege criação, atualização e exclusão de eventos com `assertCurrentUserCan`, uma permissão por ação:
+`app/agenda/_components/engine/agendamento.actions.ts` protege criação, atualização e exclusão de eventos com `assertCurrentUserCan`, uma permissão por ação, e sempre escopa ao `empresaId` do vínculo ativo:
 
 ```ts
 "use server";
 
 import { assertCurrentUserCan } from "@/lib/access-control";
+import { EmpresaRequiredError } from "@/lib/access-control/errors";
 
 export async function criarEventoAction(input: unknown) {
   const ctx = await assertCurrentUserCan("agenda:create");
 
   // ctx.usuarioId já validado; se o usuário não tiver a permissão
-  // "agenda:create" (e não for admin), a linha acima lança AccessDeniedError
-  // antes de qualquer parse/mutação.
+  // "agenda:create" (nem em Role.permissoes, nem no plano da empresa) e
+  // não for admin, a linha acima já lançou AccessDeniedError.
 
-  // ...validação do input e chamada ao agendamentoService
+  if (!ctx.membroEmpresa) {
+    throw new EmpresaRequiredError();
+  }
+
+  // ...validação do input e chamada ao agendamentoService, passando
+  // ctx.membroEmpresa.empresaId
 }
 ```
 
-`atualizarEventoAction` e `excluirEventoAction` seguem o mesmo padrão, com `"agenda:update"` e `"agenda:delete"`.
+Guard de permissão e escopo de tenant são checagens independentes: mesmo o admin da plataforma (que sempre passa em `assertCurrentUserCan`) precisa de uma empresa ativa pra criar um evento, porque `Evento` pertence a uma `Empresa`, não a um usuário. `atualizarEventoAction` e `excluirEventoAction` seguem o mesmo padrão, com `"agenda:update"` e `"agenda:delete"`.
 
 ## Como incluir uma nova permissão
 
-1. **Escolha o nome** no formato `recurso:acao` (ex.: `relatorios:export`, `usuarios:delete`) — sem enum central para manter; qualquer string é uma permissão válida.
-2. **Atribua a string a um `Role`**: `Role.permissoes` é uma coluna `String[]` no Prisma, então não exige migration — adicione o valor à lista de um papel existente (via seed, Prisma Studio, ou uma action própria que use `roleService`) e associe o usuário a esse papel (`User.roleId`).
-3. **Proteja a action** com `await assertCurrentUserCan("recurso:acao")` logo no topo, antes de validar o input — igual ao exemplo acima.
-4. **Esconda a UI correspondente**, se fizer sentido, checando `canUseFeature(ctx, "recurso:acao")` num Server Component (sem precisar lançar erro — só decide o que renderizar).
+1. **Escolha o nome** no formato `recurso:acao` (ex.: `relatorios:export`, `financeiro:delete`) e adicione-o em `lib/access-control/permission-registry.ts` (`resourceRegistry`), classificando a operação como `create`/`read`/`update`/`delete` (fica atrás do checkbox mestre do recurso na UI de papéis/planos) ou `extra` (só aparece em "+ opções"). Se o recurso tiver uma operação `read`, `aplicarDependenciasDeLeitura` trava automaticamente `create`/`update`/`delete` desse recurso atrás da leitura — não dá pra liberar escrita sem leitura, nem na UI (`PermissionMatrixField`) nem gravando direto via `role.service`/`plano.service`.
+2. **Libere no plano**: em `/admin/planos` (área global, só admin), marque a chave como permitida para o(s) plano(s) que devem ter acesso à feature — sem isso, `canUseFeature` nunca libera a permissão, mesmo que o papel do usuário a tenha.
+3. **Atribua a um papel da empresa**: em `/dashboard/empresa/papeis`, marque a chave no papel desejado (ou crie um papel customizado). Não exige migration — `Role.permissoes` é `String[]`.
+4. **Proteja a action** com `await assertCurrentUserCan("recurso:acao")` logo no topo, antes de validar o input.
+5. **Esconda a UI correspondente**, se fizer sentido, checando `canUseFeature(ctx, "recurso:acao")` num Server Component (sem precisar lançar erro — só decide o que renderizar).
 
-`lib/services/role.service.ts` expõe `listarTodos()` e `recuperarComPermissoes(id)` para ler papéis e suas permissões (ex.: para uma futura tela de administração de papéis).
+A página `/dashboard/exemplos` mostra, para o usuário logado, o resultado de cada camada (papel, plano, `canUseFeature`) para todas as chaves do catálogo — útil pra depurar por que uma permissão está ou não liberada.
 
 ## Policies
 
-`policy.ts` contém decisões sem consultar o banco:
+`policy.ts` contém decisões sem consultar o banco (o `AccessContext` já foi carregado por `getAccessContext()`):
 
-- `canActAs(ctx, "ADMIN")` — papel administrativo.
-- `canUseFeature(ctx, permissao)` — permissão granular (`recurso:acao`); admin sempre retorna `true`.
+- `canActAs(ctx, "ADMIN" | "PROPRIETARIO_EMPRESA")` — papel administrativo da plataforma ou papel de Proprietário na empresa ativa.
+- `temEmpresaAtiva(ctx)` — há vínculo ativo com alguma empresa (ou o usuário é admin da plataforma).
+- `canUseFeature(ctx, permissao)` — permissão granular (`recurso:acao`); admin sempre retorna `true`; ver as duas camadas (papel + plano) acima.
 
 Use policy quando a decisão depender apenas do `AccessContext` já carregado — por exemplo, pra decidir o que renderizar num Server Component sem lançar erro.
 
 ## Erros
 
-Erros disponíveis em `errors.ts`: `AuthenticationRequiredError`, `AccessDeniedError`, `ProfileRequiredError`.
+Erros disponíveis em `errors.ts`: `AuthenticationRequiredError`, `AccessDeniedError`, `ProfileRequiredError`, `EmpresaRequiredError`.
 
-`assertAdminAction` lança `ProfileRequiredError` (subclasse de `AccessDeniedError`); `assertCurrentUserCan` lança `AccessDeniedError` diretamente, com a permissão faltante na mensagem.
+`assertAdminAction`/`assertProprietarioEmpresa` lançam `ProfileRequiredError` (subclasse de `AccessDeniedError`); `assertEmpresaAction` lança `EmpresaRequiredError` (também subclasse de `AccessDeniedError`); `assertCurrentUserCan` lança `AccessDeniedError` diretamente, com a permissão faltante na mensagem.
 
 ## Estendendo o RBAC
 
 Para adicionar um novo papel, recurso ou regra de ownership:
 
 1. Se for decisão sem banco, adicione em `policy.ts`.
-2. Se for uma permissão granular nova (`recurso:acao`), não precisa mexer em código de policy — só adicionar a string em `Role.permissoes` e proteger a action com `assertCurrentUserCan` (veja "Como incluir uma nova permissão" acima).
-3. Se precisar carregar um recurso com verificação de ownership, crie um guard próprio (siga o padrão de `assertAdminAction`).
-4. Se for composição comum de server action, adicione em `action-guards.ts` ou `permission-guard.ts`, conforme o mecanismo (papel ou permissão).
+2. Se for uma permissão granular nova (`recurso:acao`), siga "Como incluir uma nova permissão" acima — cadastro no registry, teto de plano, atribuição a um papel, guard na action.
+3. Se precisar carregar um recurso com verificação de ownership além do escopo de empresa, crie um guard próprio (siga o padrão de `assertProprietarioEmpresa`).
+4. Se for composição comum de server action, adicione em `action-guards.ts` ou `permission-guard.ts`, conforme o mecanismo (papel/tenant ou permissão).

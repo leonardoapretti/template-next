@@ -174,6 +174,8 @@ Nunca adicionar co-autoria nos commits
 
 Verifique os componentes de ui disponíveis em /components
 
+Todo artefato que vem do banco de dados em forma de lista será exibido como data-table por padrão. Toda data-table deverá conter filtro de texto livre para campos tipo nome e etc, bem como filtros específicos select e etc para outros artefatos enum.
+
 Sempre que alterar alguma coisa faça o seguinte questionamento: isso é seguro?
 
 Preciso que sempre que possível as pages da aplicação sejam server-side. se um trecho de uma página necessitar ser client-side esse trecho deverá ser abstraído em outro arquivo, nunca transformar o arquivo inteiro em client-side por conta de um trecho específico.
