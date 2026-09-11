@@ -8,6 +8,7 @@ export type UsuarioAtualContexto = {
   usuarioId: string;
   isAdmin: boolean;
   acessoGlobal: boolean;
+  empresaId: string | null;
 };
 
 export async function getUsuarioAtualContexto(): Promise<UsuarioAtualContexto> {
@@ -17,5 +18,6 @@ export async function getUsuarioAtualContexto(): Promise<UsuarioAtualContexto> {
     usuarioId: ctx.usuarioId,
     isAdmin: ctx.isAdmin,
     acessoGlobal: ctx.isAdmin,
+    empresaId: ctx.membroEmpresa?.empresaId ?? null,
   };
 }

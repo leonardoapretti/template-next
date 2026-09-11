@@ -2,9 +2,12 @@ import "dotenv/config";
 
 import { db } from "../lib/db";
 import { seedAdmin } from "./seed-admin";
+import { seedEmpresas } from "./seed-empresas";
 
 async function main() {
   await seedAdmin(db);
+  console.log("");
+  await seedEmpresas(db);
   console.log("");
   console.log("✅ Seed finalizado com sucesso.");
 }

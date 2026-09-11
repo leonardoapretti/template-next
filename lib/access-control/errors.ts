@@ -24,3 +24,12 @@ export class ProfileRequiredError extends AccessDeniedError {
     this.name = "ProfileRequiredError";
   }
 }
+
+export class EmpresaRequiredError extends AccessDeniedError {
+  code = "EMPRESA_REQUIRED";
+
+  constructor(message = "Nenhuma empresa ativa para esta ação.") {
+    super(message);
+    this.name = "EmpresaRequiredError";
+  }
+}

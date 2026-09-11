@@ -5,7 +5,14 @@ import { recifrarParaAuditoria } from "./crypto/encryption-extension";
 
 // Models sensíveis cobertos pela auditoria automática. Toda escrita
 // (create/update/delete/upsert) nesses models gera um AuditLog.
-export const AUDITADOS = new Set(["User"]);
+export const AUDITADOS = new Set([
+  "User",
+  "Empresa",
+  "MembroEmpresa",
+  "Role",
+  "Plano",
+  "PlanoPermissao",
+]);
 
 // Nome do delegate do Prisma Client para cada model (camelCase do nome do
 // model), usado para buscar o estado anterior em update/delete.

@@ -15,6 +15,9 @@ type CriarActionTokenParams = {
   userId?: string;
   email?: string | null;
 
+  empresaId?: string;
+  roleId?: string;
+
   revogarAnteriores?: boolean;
 };
 
@@ -66,6 +69,7 @@ class ActionTokenService {
             revokedAt: null,
             ...(params.userId ? { userId: params.userId } : {}),
             ...(params.email ? { email: params.email.toLowerCase() } : {}),
+            ...(params.empresaId ? { empresaId: params.empresaId } : {}),
           },
           data: {
             revokedAt: new Date(),
@@ -80,6 +84,8 @@ class ActionTokenService {
           expiresAt,
           userId: params.userId,
           email: params.email?.toLowerCase() ?? null,
+          empresaId: params.empresaId,
+          roleId: params.roleId,
         },
       });
 
@@ -105,6 +111,8 @@ class ActionTokenService {
       },
       include: {
         user: true,
+        empresa: true,
+        role: true,
       },
     });
   }

@@ -15,6 +15,7 @@ enum ActionTokenTipo {
   VERIFICACAO_EMAIL
   REDEFINICAO_SENHA
   ALTERACAO_EMAIL
+  CONVITE_MEMBRO_EMPRESA
 }
 
 enum FrequenciaEvento {
@@ -45,45 +46,149 @@ model User {
   isAdmin         Boolean   @default(false)
   nome            String
 
-  roleId String?
-  role   Role?   @relation(fields: [roleId], references: [id])
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  actionTokens ActionToken[]
-  eventos      Evento[]
+  actionTokens   ActionToken[]
+  membrosEmpresa MembroEmpresa[]
 
-  @@index([roleId])
   @@map("users")
 }
 
 // ─────────────────────────────────────────────
-// ACCESS CONTROL
+// ACCESS CONTROL / MULTI-TENANT
 // ─────────────────────────────────────────────
 
-// Perfil de acesso: concede um conjunto de permissões granulares por
-// recurso e ação (ex.: "usuarios:create", "usuarios:delete") aos usuários
-// vinculados a ele. Usuários com isAdmin=true ignoram este model e têm
-// acesso irrestrito (ver lib/access-control/policy.ts).
-model Role {
-  id          String   @id @default(cuid())
-  nome        String   @unique
-  permissoes String[]
+// Tenant do template: um usuário pode estar vinculado a várias empresas
+// (ver MembroEmpresa), cada uma com seus próprios papéis e permissões.
+// Não há papel global do usuário — permissão sempre vem do vínculo com a
+// empresa ativa (ver lib/access-control/context.ts).
+model Empresa {
+  id    String  @id @default(cuid())
+  nome  String
+  ativo Boolean @default(true)
+
+  // Plano de assinatura — controla o teto de features liberadas (ver
+  // PlanoPermissao), independente do Role de cada membro. Opcional pra não
+  // quebrar empresas já existentes: `null` é tratado como "sem restrição
+  // de plano" (planoService.buscarMatriz retorna tudo liberado).
+  planoId String?
+  plano   Plano?  @relation(fields: [planoId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuarios User[]
+  membros      MembroEmpresa[]
+  roles        Role[]
+  actionTokens ActionToken[]
+  eventos      Evento[]
 
+  @@index([planoId])
+  @@map("empresas")
+}
+
+// Vínculo ativo de um usuário com uma empresa e o papel que ele tem nela.
+// RN: um usuário só pode ter um vínculo por empresa (@@unique), mas pode
+// estar vinculado a várias empresas simultaneamente — o "usuário admin
+// compartilhado entre diversos estúdios/empresas" do pedido original.
+model MembroEmpresa {
+  id String @id @default(cuid())
+
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  usuarioId String
+  usuario   User   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, usuarioId])
+  @@index([empresaId])
+  @@index([usuarioId])
+  @@index([roleId])
+  @@map("membros_empresa")
+}
+
+// Perfil de acesso de uma empresa: concede um conjunto de permissões
+// granulares por recurso e ação (ex.: "agenda:create", "empresa:configurar")
+// aos membros vinculados a ela via MembroEmpresa. Usuários com
+// User.isAdmin=true (superadmin da plataforma, não da empresa) ignoram
+// este model (ver lib/access-control/policy.ts). padraoSistema marca os
+// papéis semeados na criação da empresa (Proprietário/Administrador), que
+// não podem ser renomeados/excluídos; o Proprietário, além disso, sempre
+// tem todas as permissões (bypass em canUseFeature, não editável).
+model Role {
+  id            String  @id @default(cuid())
+  empresaId     String
+  empresa       Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nome          String
+  permissoes    String[]
+  padraoSistema Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  membros      MembroEmpresa[]
+  actionTokens ActionToken[]
+
+  @@unique([empresaId, nome])
+  @@index([empresaId])
   @@map("roles")
+}
+
+// Plano de assinatura — hoje só existe um plano ("PADRAO") liberando todas
+// as chaves de lib/access-control/permission-registry.ts, mas o modelo já
+// suporta múltiplos planos reais. Controla um teto de features por
+// empresa, independente do Role de cada membro: uma permissão só é
+// efetiva se estiver no Role do membro E liberada no plano da empresa
+// (ver canUseFeature).
+model Plano {
+  id     String  @id @default(cuid())
+  codigo String  @unique
+  nome   String
+  ativo  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissoes PlanoPermissao[]
+  empresas   Empresa[]
+
+  @@map("planos")
+}
+
+// Matriz de permissões do plano: uma linha por chave de
+// permission-registry.ts, editável em /admin/planos. Ausência de linha
+// para uma chave é tratada como permitido: false (ver
+// planoService.buscarMatriz).
+model PlanoPermissao {
+  id String @id @default(cuid())
+
+  planoId String
+  plano   Plano  @relation(fields: [planoId], references: [id], onDelete: Cascade)
+
+  chave     String
+  permitido Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planoId, chave])
+  @@index([planoId])
+  @@map("planos_permissoes")
 }
 
 // ─────────────────────────────────────────────
 // AGENDA
 // ─────────────────────────────────────────────
 
-// Evento de agenda de um usuário. data/dataFim/horaInicio/horaFim ficam em
+// Evento de agenda de uma empresa. data/dataFim/horaInicio/horaFim ficam em
 // campos de texto (não DateTime) para permitir recorrência e exceções por
 // ocorrência sem depender de fuso horário — a expansão das ocorrências
 // dentro de uma janela de datas acontece em app/dashboard/agenda/_components/engine.
@@ -101,15 +206,15 @@ model Evento {
   recorrenciaAte String?
   observacao     String?          @db.Text
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 
   excecoes EventoExcecao[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
+  @@index([empresaId])
   @@index([data])
   @@index([dataFim])
   @@index([recorrencia])
@@ -157,6 +262,14 @@ model ActionToken {
 
   email String?
 
+  // Usados por CONVITE_MEMBRO_EMPRESA: qual empresa e com qual papel o
+  // convidado entra ao aceitar (ver empresaService.criarConviteEEnviar).
+  empresaId String?
+  empresa   Empresa? @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
   expiresAt DateTime
   usedAt    DateTime?
   revokedAt DateTime?
@@ -168,6 +281,7 @@ model ActionToken {
   @@index([userId])
   @@index([email])
   @@index([expiresAt])
+  @@index([empresaId])
   @@map("action_tokens")
 }
 
