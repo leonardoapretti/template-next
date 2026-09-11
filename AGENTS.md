@@ -84,6 +84,14 @@ Se não houver nada relevante além da implementação, responda apenas de forma
 * Preserve os padrões de App Router existentes no projeto.
 * Para navegação, layouts, loading states, error boundaries, parallel routes e intercepting routes, utilize os recursos nativos do App Router quando apropriado.
 * Evite soluções manuais quando o Next.js já possuir um mecanismo específico para o problema.
+* Sempre que possível, as pages da aplicação devem ser Server Components. Se um trecho de uma página precisar ser client-side, abstraia esse trecho para um arquivo/componente separado — nunca transforme a página inteira em client-side por causa de uma parte específica.
+
+## UI e componentes
+
+* Antes de implementar qualquer componente visual, verifique o que já existe em `/components` (incluindo `/components/ui`) e reutilize em vez de recriar.
+* Só crie um componente novo quando nenhum existente atender, mesmo com pequenas adaptações via props/className.
+* Todo artefato vindo do banco de dados em forma de lista deve ser exibido como data-table por padrão (ver `/components/data-table`).
+* Toda data-table deve ter filtro de texto livre para campos como nome, além de filtros específicos (select, etc.) para campos enum/categóricos.
 
 ## Banco de dados e Prisma
 
@@ -104,6 +112,7 @@ Se não houver nada relevante além da implementação, responda apenas de forma
 * Valide entradas em boundaries apropriados.
 * Não confie exclusivamente em validação client-side para operações sensíveis.
 * Preserve regras de autorização existentes.
+* Sempre que alterar alguma coisa, faça o seguinte questionamento: isso é seguro?
 
 ## Tratamento de erros
 
@@ -122,6 +131,8 @@ Quando existirem, priorize:
 2. typecheck;
 3. lint.
 
+Sempre que implementar uma feature nova, implemente testes para ela — futuras alterações ou remoções dessa feature estarão cobertas pelos testes já implementados.
+
 Não rode `pnpm build` (nem `next build`) a menos que eu peça expressamente. É lento e não deve fazer parte do fluxo padrão de validação.
 
 Não corrija erros preexistentes e não relacionados apenas para deixar todos os checks verdes.
@@ -134,6 +145,7 @@ Não diga que algo funciona se não foi validado quando havia uma forma razoáve
 
 * Não faça commit sem que eu peça.
 * Não faça push sem que eu peça.
+* Nunca adicione co-autoria nos commits.
 * Não altere histórico Git.
 * Não execute rebase, reset, force push ou operações destrutivas sem solicitação explícita.
 * Não descarte alterações locais que não foram feitas por você.
@@ -166,19 +178,8 @@ A documentação da aplicação está disponível em `lib/fumadocs/content/docs`
 
 ## Controle de acesso
 
-As actions da aplicação devem ser protegidas com o sistema de controle de acesso por conta das permissões e dos planos dispoíveis na aplicação
-
-## Orientações gerais
-
-Nunca adicionar co-autoria nos commits
-
-Verifique os componentes de ui disponíveis em /components
-
-Todo artefato que vem do banco de dados em forma de lista será exibido como data-table por padrão. Toda data-table deverá conter filtro de texto livre para campos tipo nome e etc, bem como filtros específicos select e etc para outros artefatos enum.
-
-Sempre que alterar alguma coisa faça o seguinte questionamento: isso é seguro?
-
-Preciso que sempre que possível as pages da aplicação sejam server-side. se um trecho de uma página necessitar ser client-side esse trecho deverá ser abstraído em outro arquivo, nunca transformar o arquivo inteiro em client-side por conta de um trecho específico.
+* As actions da aplicação devem ser protegidas com o sistema de controle de acesso, por conta das permissões e dos planos disponíveis na aplicação.
+* Sempre que implementar um botão de ação, uma nova rota, ou alterar uma feature existente, revise a questão das permissões do usuário para essa mudança.
 
 ## Resposta final
 
