@@ -40,21 +40,14 @@ function getLoginErrorMessage(code: string) {
   return "Email ou senha incorretos";
 }
 
-// Assinatura (prevState, formData) exigida pelo useActionState do React para
-// que o form funcione via <form action={...}> nativo (progressive enhancement:
-// sem JS, o browser faz um POST normal e esta action roda no servidor).
-export async function loginAction(
-  _prevState: LoginActionState,
-  formData: FormData,
-): Promise<LoginActionState> {
-  const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
+export async function loginAction(input: unknown): Promise<LoginActionState> {
+  const parsed = loginSchema.safeParse(input);
 
   if (!parsed.success) {
     return { success: false, errorMessage: "Dados inválidos" };
   }
+
+  const retorno = (input as { retorno?: unknown })?.retorno;
 
   let destino: string;
 
@@ -66,7 +59,6 @@ export async function loginAction(
     });
 
     const usuario = await userService.recuperarUsuarioLogin(parsed.data.email);
-    const retorno = formData.get("retorno");
 
     destino =
       typeof retorno === "string" && retorno.startsWith("/")

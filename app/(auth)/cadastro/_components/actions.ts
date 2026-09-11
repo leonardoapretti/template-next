@@ -10,7 +10,7 @@ import { userService } from "@/lib/services/user.service";
 import { verificarRateLimit } from "@/lib/utils/rate-limit";
 import { getDadosAuditoriaAssinatura } from "@/lib/utils/request";
 
-import { type CadastroFormSchema, cadastroSchema } from "./schema";
+import { cadastroSchema } from "./schema";
 
 // Limite de cadastros por IP, para dificultar criação automatizada de contas.
 const CADASTRO_LIMITE_TENTATIVAS = 5;
@@ -19,29 +19,13 @@ const CADASTRO_JANELA_MS = 60 * 60 * 1000; // 1 hora
 export type CadastroActionState = {
   success: boolean;
   errorMessage: string;
-  fieldErrors?: Partial<Record<keyof CadastroFormSchema, string[]>>;
 } | null;
 
-// Assinatura (prevState, formData) exigida pelo useActionState do React para
-// que o form funcione via <form action={...}> nativo (progressive enhancement:
-// sem JS, o browser faz um POST normal e esta action roda no servidor).
-export async function cadastrarAction(
-  _prevState: CadastroActionState,
-  formData: FormData,
-): Promise<CadastroActionState> {
-  const parsed = cadastroSchema.safeParse({
-    nome: formData.get("nome"),
-    email: formData.get("email"),
-    senha: formData.get("senha"),
-    confirmarSenha: formData.get("confirmarSenha"),
-  });
+export async function cadastrarAction(input: unknown): Promise<CadastroActionState> {
+  const parsed = cadastroSchema.safeParse(input);
 
   if (!parsed.success) {
-    return {
-      success: false,
-      errorMessage: "Dados inválidos.",
-      fieldErrors: parsed.error.flatten().fieldErrors,
-    };
+    return { success: false, errorMessage: "Dados inválidos." };
   }
 
   const { ip, userAgent } = getDadosAuditoriaAssinatura(await headers());
@@ -61,7 +45,8 @@ export async function cadastrarAction(
 
   const senha = await bcrypt.hash(parsed.data.senha, 12);
   const isDevelopment = process.env.NODE_ENV === "development";
-  const retorno = formData.get("retorno");
+  const extras = input as { retorno?: unknown; conviteToken?: unknown };
+  const retorno = extras.retorno;
   const retornoQuery =
     typeof retorno === "string" && retorno.startsWith("/")
       ? `?retorno=${encodeURIComponent(retorno)}`
@@ -75,7 +60,7 @@ export async function cadastrarAction(
   // (hash, validade, não usado/revogado) e confere que o e-mail do
   // cadastro bate exatamente com o do convite; nunca confia só no
   // parâmetro vindo do client.
-  const conviteToken = formData.get("conviteToken");
+  const conviteToken = extras.conviteToken;
   const convite =
     typeof conviteToken === "string" && conviteToken.length > 0
       ? await actionTokenService.buscarValido({

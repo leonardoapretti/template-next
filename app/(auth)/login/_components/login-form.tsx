@@ -1,24 +1,31 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "./actions";
+import { loginSchema, type LoginSchema } from "./schema";
 
 export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; retorno?: string }) {
-  const [state, formAction, pending] = useActionState(loginAction, null);
-  const lastToastedError = useRef<string | null>(null);
+  const form = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: emailPadrao ?? "", password: "" },
+  });
 
-  useEffect(() => {
-    if (state?.errorMessage && state.errorMessage !== lastToastedError.current) {
-      lastToastedError.current = state.errorMessage;
-      toast.error(state.errorMessage);
+  async function onSubmit(data: LoginSchema) {
+    const result = await loginAction({ ...data, retorno });
+
+    // Em caso de sucesso a action já redireciona (lança redirect()) — só
+    // chega aqui em caso de falha, então os campos não são limpos.
+    if (result && !result.success) {
+      toast.error(result.errorMessage);
     }
-  }, [state]);
+  }
 
   return (
     <div className="w-100 max-w-sm">
@@ -31,9 +38,7 @@ export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; reto
         </p>
       </div>
 
-      <form action={formAction} className="space-y-6">
-        <input type="hidden" name="retorno" value={retorno ?? ""} />
-
+      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
         {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
@@ -45,13 +50,12 @@ export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; reto
 
             <Input
               id="email"
-              name="email"
               type="email"
               autoComplete="username"
               placeholder="seu@email.com"
               className="h-11 pl-9 text-sm"
-              defaultValue={emailPadrao}
               required
+              {...form.register("email")}
             />
           </div>
         </div>
@@ -73,26 +77,19 @@ export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; reto
 
             <Input
               id="password"
-              name="password"
               type="password"
               autoComplete="current-password"
               placeholder="••••••••"
               className="h-11 pl-9 text-sm"
               required
+              {...form.register("password")}
             />
           </div>
         </div>
 
-        {/* Erro geral */}
-        {state?.errorMessage && (
-          <div className="rounded-md bg-destructive/10 px-4 py-3">
-            <p className="text-sm text-destructive">{state.errorMessage}</p>
-          </div>
-        )}
-
         {/* Submit */}
-        <Button type="submit" disabled={pending} className="mt-2 h-11 w-full">
-          {pending ? "Entrando..." : "Entrar"}
+        <Button type="submit" disabled={form.formState.isSubmitting} className="mt-2 h-11 w-full">
+          {form.formState.isSubmitting ? "Entrando..." : "Entrar"}
         </Button>
       </form>
 

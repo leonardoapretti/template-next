@@ -1,13 +1,16 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Mail, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useActionState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cadastrarAction } from "./actions";
+import { cadastroSchema, type CadastroFormSchema } from "./schema";
 
 export function CadastroForm({
   conviteToken,
@@ -18,7 +21,20 @@ export function CadastroForm({
   emailPadrao?: string;
   retorno?: string;
 }) {
-  const [state, formAction, pending] = useActionState(cadastrarAction, null);
+  const form = useForm<CadastroFormSchema>({
+    resolver: zodResolver(cadastroSchema),
+    defaultValues: { nome: "", email: emailPadrao ?? "", senha: "", confirmarSenha: "" },
+  });
+
+  async function onSubmit(data: CadastroFormSchema) {
+    const result = await cadastrarAction({ ...data, retorno, conviteToken });
+
+    // Em caso de sucesso a action já redireciona (lança redirect()) — só
+    // chega aqui em caso de falha, então os campos não são limpos.
+    if (result && !result.success) {
+      toast.error(result.errorMessage);
+    }
+  }
 
   return (
     <div className="w-full max-w-md">
@@ -29,60 +45,44 @@ export function CadastroForm({
         </p>
       </div>
 
-      <form className="space-y-4" action={formAction}>
-        <input type="hidden" name="retorno" value={retorno ?? ""} />
-        <input type="hidden" name="conviteToken" value={conviteToken ?? ""} />
-
-        <Campo label="Nome completo" error={state?.fieldErrors?.nome?.[0]} icon={<UserRound />}>
-          <Input id="nome" name="nome" autoComplete="name" placeholder="Seu nome" required />
-        </Campo>
-
-        <Campo label="E-mail" error={state?.fieldErrors?.email?.[0]} icon={<Mail />}>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <Campo label="Nome completo" error={form.formState.errors.nome?.message} icon={<UserRound />}>
           <Input
-            id="email"
-            name="email"
-            autoComplete="email"
-            type="email"
-            placeholder="seu@email.com"
-            defaultValue={emailPadrao}
-            readOnly={Boolean(conviteToken)}
-            required
+            autoComplete="name"
+            placeholder="Seu nome"
+            {...form.register("nome")}
           />
         </Campo>
 
-        <Campo label="Senha" error={state?.fieldErrors?.senha?.[0]} icon={<Lock />}>
+        <Campo label="E-mail" error={form.formState.errors.email?.message} icon={<Mail />}>
           <Input
-            id="senha"
-            name="senha"
+            autoComplete="email"
+            type="email"
+            placeholder="seu@email.com"
+            readOnly={Boolean(conviteToken)}
+            {...form.register("email")}
+          />
+        </Campo>
+
+        <Campo label="Senha" error={form.formState.errors.senha?.message} icon={<Lock />}>
+          <Input
             autoComplete="new-password"
             type="password"
             minLength={8}
-            required
+            {...form.register("senha")}
           />
         </Campo>
 
         <Campo
           label="Confirmar senha"
-          error={state?.fieldErrors?.confirmarSenha?.[0]}
+          error={form.formState.errors.confirmarSenha?.message}
           icon={<Lock />}
         >
-          <Input
-            id="confirmarSenha"
-            name="confirmarSenha"
-            autoComplete="new-password"
-            type="password"
-            required
-          />
+          <Input autoComplete="new-password" type="password" {...form.register("confirmarSenha")} />
         </Campo>
 
-        {state?.errorMessage && !state.fieldErrors && (
-          <div className="rounded-md bg-destructive/10 px-4 py-3">
-            <p className="text-sm text-destructive">{state.errorMessage}</p>
-          </div>
-        )}
-
-        <Button className="mt-2 h-11 w-full" disabled={pending} type="submit">
-          {pending ? "Criando conta..." : "Cadastrar"}
+        <Button className="mt-2 h-11 w-full" disabled={form.formState.isSubmitting} type="submit">
+          {form.formState.isSubmitting ? "Criando conta..." : "Cadastrar"}
         </Button>
       </form>
 
