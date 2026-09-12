@@ -21,26 +21,12 @@ import {
 } from "../ui/dropdown-menu";
 import { type BreadcrumbLabel, useBreadcrumbLabels } from "./breadcrumb-labels-context";
 
+// Só precisa de uma entrada aqui quando o fallback (capitalizar a palavra)
+// não é suficiente — acento (ex.: papeis -> Perfis) ou palavra diferente da
+// rota. Segmentos sem acento nem troca de palavra (ex.: "agenda", "novo")
+// já saem certos do fallback.
 const labels: Record<string, string> = {
-  dashboard: "Dashboard",
-  usuarios: "Usuários",
-  configuracoes: "Configurações",
-  financeiro: "Financeiro",
-  pacientes: "Pacientes",
-  prontuario: "Prontuário",
-  avaliacoes: "Avaliações",
-  evolucoes: "Evoluções",
-  agenda: "Agenda",
-  paciente: "Paciente",
-  documentos: "Documentos",
-  avaliacao: "Avaliação",
-  evolucao: "Evolução",
-  faturamento: "Faturamento",
-  imprimir: "Imprimir",
-  editar: "Editar",
-  novo: "Novo",
-  nova: "Nova",
-  criar: "Criar",
+  papeis: "Perfis",
 };
 
 const TRACO_REGEX = /[-_]/;

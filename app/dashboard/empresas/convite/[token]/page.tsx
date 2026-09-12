@@ -43,7 +43,7 @@ export default async function ConviteEmpresaPage({
   return (
     <PageShell>
       <PageHeader
-        description={`Papel: ${convite.roleNome}`}
+        description={`Perfil: ${convite.roleNome}`}
         icon={<MailIcon className="size-5" />}
         title={`Convite para ${convite.empresaNome}`}
       />

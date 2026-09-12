@@ -39,7 +39,7 @@ export default async function MembrosEmpresaPage() {
             <ConvidarMembroForm roles={roles.map((role) => ({ id: role.id, nome: role.nome }))} />
           )
         }
-        description="Usuários administrativos vinculados a esta empresa."
+        description="Usuários administrativos vinculados a esta empresa e convites ainda pendentes."
         icon={<UsersIcon className="size-5" />}
         title="Membros"
       />

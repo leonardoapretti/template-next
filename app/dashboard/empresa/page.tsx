@@ -28,7 +28,7 @@ export default async function EmpresaPage() {
   return (
     <PageShell>
       <PageHeader
-        description={empresa ? `Papel: ${ctx.membroEmpresa.roleNome}` : undefined}
+        description={empresa ? `Perfil: ${ctx.membroEmpresa.roleNome}` : undefined}
         icon={<Building2Icon className="size-5" />}
         title={empresa?.nome ?? "Empresa"}
       />

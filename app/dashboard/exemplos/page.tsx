@@ -75,7 +75,7 @@ function TabelaPermissoes({ ctx }: { ctx: AccessContext }) {
         <thead>
           <tr className="border-b text-left text-muted-foreground">
             <th className="py-2 pr-4 font-medium">Permissão</th>
-            <th className="py-2 pr-4 font-medium">Papel libera?</th>
+            <th className="py-2 pr-4 font-medium">Perfil libera?</th>
             <th className="py-2 pr-4 font-medium">Plano libera?</th>
             <th className="py-2 font-medium">canUseFeature</th>
           </tr>
@@ -123,7 +123,7 @@ export default async function ExemplosPermissoesPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Papel na empresa ativa</dt>
+            <dt className="text-muted-foreground">Perfil na empresa ativa</dt>
             <dd className="font-medium">{ctx.membroEmpresa?.roleNome ?? "—"}</dd>
           </div>
           <div>
@@ -136,8 +136,8 @@ export default async function ExemplosPermissoesPage() {
       </PageSection>
 
       <PageSection
-        description="Para cada permissão do catálogo (lib/access-control/permission-registry.ts): se o papel do usuário libera, se o plano da empresa libera, e o resultado final de canUseFeature (as duas precisam estar liberadas — exceto para o Proprietário, que sempre passa na camada de papel, e para o admin da plataforma, que ignora as duas)."
-        title="Matriz de permissões (recurso × papel × plano)"
+        description="Para cada permissão do catálogo (lib/access-control/permission-registry.ts): se o perfil do usuário libera, se o plano da empresa libera, e o resultado final de canUseFeature (as duas precisam estar liberadas — exceto para o Proprietário, que sempre passa na camada de perfil, e para o admin da plataforma, que ignora as duas)."
+        title="Matriz de permissões (recurso × perfil × plano)"
       >
         <TabelaPermissoes ctx={ctx} />
       </PageSection>
@@ -152,7 +152,7 @@ export default async function ExemplosPermissoesPage() {
             (formato <code className="rounded bg-muted px-1 py-0.5 text-xs">recurso:acao</code>).
           </li>
           <li>
-            Atribua a um papel da empresa em{" "}
+            Atribua a um perfil da empresa em{" "}
             {ctx.membroEmpresa ? (
               <Link className="text-primary underline underline-offset-2" href="/dashboard/empresa/papeis">
                 /dashboard/empresa/papeis
@@ -164,7 +164,7 @@ export default async function ExemplosPermissoesPage() {
           </li>
           <li>
             Confirme que o plano da empresa também libera a chave — o teto de plano é
-            independente do papel —{" "}
+            independente do perfil —{" "}
             {ctx.isAdmin ? (
               <Link className="text-primary underline underline-offset-2" href="/admin/planos">
                 /admin/planos

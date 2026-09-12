@@ -1,18 +1,18 @@
 ---
 title: Empresas e multi-tenant
-description: Estrutura multi-tenant do template — empresas, membros, convites, papéis e planos.
+description: Estrutura multi-tenant do template — empresas, membros, convites, perfis e planos.
 docId: empresas
 icon: Building2
 ---
 
-O template é multi-tenant: um usuário pode estar vinculado a várias **empresas** (`Empresa`), cada uma com seus próprios membros (`MembroEmpresa`), papéis de acesso (`Role`) e um plano de assinatura (`Plano`) que funciona como teto de features. Todo recurso de domínio real (hoje, `Evento` da agenda) pertence a uma empresa, não a um usuário.
+O template é multi-tenant: um usuário pode estar vinculado a várias **empresas** (`Empresa`), cada uma com seus próprios membros (`MembroEmpresa`), perfis de acesso (`Role`) e um plano de assinatura (`Plano`) que funciona como teto de features. Todo recurso de domínio real (hoje, `Evento` da agenda) pertence a uma empresa, não a um usuário.
 
 Para o motor de RBAC que consome esse modelo (`AccessContext`, `canUseFeature`, guards), ver [Controle de acesso](/docs/controle-de-acesso).
 
 ## Modelo de dados
 
 - `Empresa` (`id, nome, ativo, planoId?`): o tenant. `planoId` é opcional — `null` equivale a "sem teto de plano" (tudo liberado), pra não quebrar empresas criadas antes de existir a feature de planos.
-- `MembroEmpresa` (`id, empresaId, usuarioId, roleId, ativo`, `@@unique([empresaId, usuarioId])`): o vínculo de um usuário com uma empresa e o papel que ele tem nela. Um usuário pode ter, no máximo, um vínculo por empresa — mas pode ter vínculos com várias empresas diferentes (é assim que um mesmo login acessa múltiplas empresas, trocando qual está "ativa" na sessão).
+- `MembroEmpresa` (`id, empresaId, usuarioId, roleId, ativo`, `@@unique([empresaId, usuarioId])`): o vínculo de um usuário com uma empresa e o perfil que ele tem nela. Um usuário pode ter, no máximo, um vínculo por empresa — mas pode ter vínculos com várias empresas diferentes (é assim que um mesmo login acessa múltiplas empresas, trocando qual está "ativa" na sessão).
 - `Role` (`id, empresaId, nome, permissoes, padraoSistema`, `@@unique([empresaId, nome])`): perfil de acesso, sempre escopado a uma empresa (não é mais global). `padraoSistema: true` marca os 4 perfis padrão semeados na criação da empresa (`policy.ts.papeisPadraoDoSistema`) — **Proprietário**, **Administrador**, **Secretário** e **Profissional** — que não podem ser renomeados nem excluídos. Proprietário e Administrador nascem com todas as permissões; Secretário e Profissional nascem com tudo exceto operações de exclusão (o template ainda não tem um recurso "financeiro" pra restringir só do Profissional — quando existir, remova essas chaves do conjunto dele em `papeisPadraoDoSistema`). O Proprietário, além disso, sempre tem todas as permissões da empresa (bypass em `canUseFeature`, não editável em `/dashboard/empresa/papeis`); os outros 3 têm as permissões editáveis normalmente.
 - `Plano`/`PlanoPermissao`: matriz de features liberadas por plano, editada em `/admin/planos` (área global, só admin da plataforma). Hoje só existe o plano `PADRAO`, com todas as chaves de `permission-registry.ts` liberadas — pensado para crescer para planos reais (com tiers e limites) sem mudar a estrutura.
 
@@ -28,7 +28,7 @@ A troca de empresa ativa fica no dropdown do cabeçalho do sidebar (`components/
 
 ## Convite de membro por e-mail
 
-`empresaService.criarConviteEEnviar` reaproveita o model `ActionToken` já existente (tipo `CONVITE_MEMBRO_EMPRESA`, expira em 24h, `revogarAnteriores: true` invalida convites pendentes anteriores pro mesmo e-mail/empresa) e o `emailService` pra enviar o link. A tela `/dashboard/empresa/membros` lista os membros ativos e tem o formulário de convite, visível só pra quem tem a permissão `empresa:convidar` — a mesma permissão também guarda trocar o papel de um membro (`alterarPapelMembroAction`) e inativá-lo (`inativarMembroAction`): gerenciar membros é uma única área de responsabilidade.
+`empresaService.criarConviteEEnviar` reaproveita o model `ActionToken` já existente (tipo `CONVITE_MEMBRO_EMPRESA`, expira em 24h, `revogarAnteriores: true` invalida convites pendentes anteriores pro mesmo e-mail/empresa) e o `emailService` pra enviar o link. A tela `/dashboard/empresa/membros` lista os membros (ativos e inativos) e também os convites ainda pendentes (`empresaService.listarConvitesPendentes`, status "Convite enviado" na tabela, com ações de revogar e reenviar). O botão "Adicionar membro" no header abre o formulário de convite em dialog, visível só pra quem tem a permissão `empresa:convidar` — a mesma permissão também guarda trocar o perfil de um membro (`alterarPapelMembroAction`) e inativá-lo (`inativarMembroAction`): gerenciar membros é uma única área de responsabilidade.
 
 O convite exige **aceite explícito** (`empresaService.aceitarConvite`, tela `/dashboard/empresas/convite/[token]`), mesmo se o e-mail convidado já tiver conta na plataforma — a sessão precisa bater com o e-mail convidado, e o aceite é registrado no `AuditLog` como evento explícito (`CONVITE_MEMBRO_EMPRESA_ACEITO`).
 
@@ -48,7 +48,7 @@ Tudo isso é guardado, na origem (não só escondido na UI), pela permissão `pa
 
 ## Permissões por plano (`/admin/planos`)
 
-Área global (não por empresa, `app/(admin)/admin/planos`), só acessível a admin da plataforma (`assertAdminAction`). Mesmo padrão visual da tela de papéis: badges pra selecionar o plano + matriz inline com "Salvar". Um formulário simples ("Novo plano", só `código`/`nome`) permite cadastrar mais planos conforme forem sendo definidos — hoje só existe o `PADRAO`, com tudo liberado, seguindo o mesmo catálogo de `permission-registry.ts` usado pela tela de papéis.
+Área global (não por empresa, `app/(admin)/admin/planos`), só acessível a admin da plataforma (`assertAdminAction`). Mesmo padrão visual da tela de perfis: badges pra selecionar o plano + matriz inline com "Salvar". Um formulário simples ("Novo plano", só `código`/`nome`) permite cadastrar mais planos conforme forem sendo definidos — hoje só existe o `PADRAO`, com tudo liberado, seguindo o mesmo catálogo de `permission-registry.ts` usado pela tela de perfis.
 
 `planoService.buscarMatriz(planoId)` é a fonte única consultada por `canUseFeature`: para cada chave do catálogo, `permitido: true`/`false` (ausência de linha = `false`), memoizado por request via `cache()` do React. `planoId: null` (empresa sem plano vinculado) retorna tudo `true`, preservando compatibilidade.
 
@@ -58,6 +58,6 @@ Ao adicionar um recurso novo de domínio (ex.: `Produto`), siga o padrão de `Ev
 
 1. `estudioId`/`userId` não — o model ganha `empresaId String` + relação com `Empresa`, nunca com `User` diretamente.
 2. Services escopam por `empresaId`, nunca aceitando esse valor do client sem confirmar contra `ctx.membroEmpresa.empresaId`.
-3. Novas permissões granulares (`produtos:create`, etc.) entram em `permission-registry.ts`, liberadas no(s) plano(s) relevantes e atribuídas aos papéis que devem ter acesso — ver "Como incluir uma nova permissão" em [Controle de acesso](/docs/controle-de-acesso).
+3. Novas permissões granulares (`produtos:create`, etc.) entram em `permission-registry.ts`, liberadas no(s) plano(s) relevantes e atribuídas aos perfis que devem ter acesso — ver "Como incluir uma nova permissão" em [Controle de acesso](/docs/controle-de-acesso).
 
 A página `/dashboard/exemplos` mostra, ao vivo, o resultado de cada permissão do catálogo pro usuário logado — útil como referência ao estender.

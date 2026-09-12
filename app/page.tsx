@@ -22,7 +22,7 @@ const recursos = [
   {
     icon: ShieldCheck,
     title: "Controle de acesso",
-    description: "Motor de RBAC com papéis e guards de ação.",
+    description: "Motor de RBAC com perfis e guards de ação.",
   },
   {
     icon: Lock,
