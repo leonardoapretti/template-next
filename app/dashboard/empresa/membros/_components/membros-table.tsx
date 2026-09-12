@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { SendIcon, UserXIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
@@ -28,12 +29,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   alterarPapelMembroAction,
   inativarMembroAction,
   reenviarConviteAction,
   revogarConviteAction,
 } from "./actions";
+
+// Botão de ação da tabela com tooltip explicando o que ele faz — os ícones
+// sozinhos (revogar, reenviar, inativar) não são autoexplicativos.
+function BotaoAcao({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button disabled={disabled} onClick={onClick} size="icon" type="button" variant="ghost">
+            {children}
+          </Button>
+        }
+      />
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export type MembroRow = {
   id: string;
@@ -217,40 +246,32 @@ export function MembrosTable({ membros, roles, usuarioAtualId, podeGerenciar }: 
               if (row.original.status === "convidado") {
                 const { actionTokenId } = row.original;
 
-                if (!actionTokenId) return null;
+                if (!actionTokenId) return <div className="flex justify-center gap-2" />;
 
                 return (
-                  <div className="flex items-center gap-1">
-                    <Button
+                  <div className="flex justify-center gap-2">
+                    <BotaoAcao
                       disabled={reenviandoId === actionTokenId}
+                      label="Reenviar convite"
                       onClick={() => reenviar(actionTokenId)}
-                      size="icon-sm"
-                      type="button"
-                      variant="ghost"
                     >
-                      <SendIcon className="size-3.5" />
-                    </Button>
-                    <Button
-                      onClick={() => setEmRevogacao(row.original)}
-                      size="icon-sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <XIcon className="size-3.5" />
-                    </Button>
+                      <SendIcon className="size-4" />
+                    </BotaoAcao>
+                    <BotaoAcao label="Revogar convite" onClick={() => setEmRevogacao(row.original)}>
+                      <XIcon className="size-4" />
+                    </BotaoAcao>
                   </div>
                 );
               }
 
-              return row.original.usuarioId === usuarioAtualId || row.original.status !== "ativo" ? null : (
-                <Button
-                  onClick={() => setEmInativacao(row.original)}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <UserXIcon className="size-3.5" />
-                </Button>
+              return (
+                <div className="flex justify-center gap-2">
+                  {row.original.usuarioId !== usuarioAtualId && row.original.status === "ativo" && (
+                    <BotaoAcao label="Inativar membro" onClick={() => setEmInativacao(row.original)}>
+                      <UserXIcon className="size-4" />
+                    </BotaoAcao>
+                  )}
+                </div>
               );
             },
           } satisfies ColumnDef<MembroRow>,
