@@ -40,7 +40,18 @@ Decisões confirmadas:
 - **Achado ao rodar a suíte de testes:** `tests/services/plano-matriz.test.ts` importa o `plano.service.ts` real (sem mock) e quebrou, porque `cacheLife()`/`cacheTag()` só funcionam dentro do runtime do Next com `cacheComponents` habilitado — fora dele (Vitest) essas funções lançam. Corrigido mockando `next/cache` nesse teste (`cacheLife`/`cacheTag` como no-op). Os demais testes que tocam os services alterados (`papeis.test.ts`, `empresas.test.ts`, `convite-membro-empresa.test.ts`, `agenda-empresa.test.ts`) já mockavam o service inteiro, então não foram afetados. **Atenção para daqui pra frente:** qualquer teste novo que exercite a implementação real (não mockada) de um service com `"use cache"` precisa mockar `next/cache` incluindo `cacheLife`/`cacheTag`/`updateTag`, senão quebra do mesmo jeito. `pnpm test` (82 testes) e `pnpm lint` seguem passando.
 - [ ] Extrair a parte de banco de `getAccessContext()` (`db.user.findUnique` com memberships) para uma função interna cacheada, recebendo `userId` como argumento — fica para a Fase 2, junto da extração do gate de autenticação (fazem parte do mesmo componente).
 
-## Fase 2 — Extrair o "gate" de autenticação para trás de Suspense
+## Fase 2 — Cache de `getAccessContext()` + gate de autenticação
+
+- [x] `getAccessContext()` decomposto em 3 camadas cacheáveis independentes, cada uma invalidada pelo que realmente a afeta (evita ter que invalidar o cache de cada usuário quando só a permissão de um papel muda):
+  - `buscarUsuarioComMembrosCached(usuarioId)` — vínculos de empresa do usuário, sem permissões do papel. Tag `user:${usuarioId}`.
+  - `buscarPapelParaAccessContextCached(roleId, empresaId)` — nome/permissões do papel. Reusa `papeisTag(empresaId)` (já invalidado por `criarPapel`/`atualizarPermissoes`/`renomear`/`removerPapel`).
+  - `planoService.buscarMatriz(planoId)` — já cacheado desde a Fase 1.
+  - A leitura do cookie `empresa_ativa_id` continua fora de cache (é sempre lida fresca, só usada pra escolher qual membership da lista já cacheada é a "ativa").
+- [x] `updateTag(userTag(usuarioId))` adicionado em todo lugar que muda o vínculo de um usuário específico: `empresaService.criarEmpresa`, `alterarPapelMembro`, `inativarMembro`, `aceitarConvite`, e `promoverAAdminAction` (`app/dashboard/_components/actions.ts`).
+- [x] `tsc --noEmit`, `pnpm lint` e `pnpm test` (82 testes) passando.
+- **Limitação da validação até aqui:** não foi possível testar esse fluxo logado de ponta a ponta (login real → trocar papel de um membro → conferir que o próprio usuário afetado vê a mudança na hora) porque isso exigiria credenciais de teste ou rodar `db:seed` contra o banco configurado no `.env`, e evitei escrever no banco sem confirmação. Validado até aqui só por tipos, lint e os testes existentes (que mockam os services, não exercitam de fato o `"use cache"`/`updateTag` novos em `context.ts`).
+
+## Fase 2 (continuação) — Extrair o "gate" de autenticação para trás de Suspense
 
 - [ ] Criar um componente Server (`AccessGate` ou equivalente) que encapsula `getAccessContext()`/`auth()` + os redirects, recebendo `children`.
 - [ ] Envolver cada layout/page do inventário com `<Suspense fallback={...}><AccessGate>{children}</AccessGate></Suspense>`, reaproveitando os `loading.tsx` já existentes quando fizer sentido.

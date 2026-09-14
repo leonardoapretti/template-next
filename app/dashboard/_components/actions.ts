@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getAccessContext } from "@/lib/access-control";
 import { db } from "@/lib/db";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
+import { userTag } from "@/lib/services/config/cache-tags";
 
 export async function promoverAAdminAction() {
   const ctx = await getAccessContext().catch(() => null);
@@ -20,6 +21,7 @@ export async function promoverAAdminAction() {
     data: { isAdmin: true },
   });
 
+  updateTag(userTag(ctx.usuarioId));
   revalidatePath("/dashboard");
 
   return DataBaseResponse.success({ isAdmin: true }).serialize();

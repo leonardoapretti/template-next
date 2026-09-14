@@ -5,7 +5,13 @@ import { db } from "../db";
 import { actionTokenService } from "./actiontoken.service";
 import { auditLogService } from "./audit-log.service";
 import { auditTxContext } from "./audit-log-context";
-import { convitesTag, empresaTag, empresasDoUsuarioTag, membrosTag } from "./config/cache-tags";
+import {
+  convitesTag,
+  empresaTag,
+  empresasDoUsuarioTag,
+  membrosTag,
+  userTag,
+} from "./config/cache-tags";
 import { DataBaseResponse } from "./config/database-response";
 import { criarEmailHtml, emailService } from "./email.service";
 
@@ -144,6 +150,7 @@ class EmpresaService {
     ).then((response) => {
       if (response.isSuccess()) {
         updateTag(empresasDoUsuarioTag(usuarioId));
+        updateTag(userTag(usuarioId));
       }
 
       return response;
@@ -202,10 +209,12 @@ class EmpresaService {
   // pertence à empresa informada antes de escrever, nunca aceitando o
   // vínculo do cliente sem essa checagem.
   alterarPapelMembro(empresaId: string, membroId: string, roleId: string) {
+    let usuarioIdDoMembro: string | null = null;
+
     return DataBaseResponse.fromPromise(async () => {
       const membro = await db.membroEmpresa.findFirst({
         where: { id: membroId, empresaId, ativo: true },
-        select: { id: true },
+        select: { id: true, usuarioId: true },
       });
 
       if (!membro) {
@@ -221,10 +230,15 @@ class EmpresaService {
         throw new Error("Perfil não encontrado nesta empresa.");
       }
 
+      usuarioIdDoMembro = membro.usuarioId;
+
       return db.membroEmpresa.update({ where: { id: membroId }, data: { roleId } });
     }).then((response) => {
       if (response.isSuccess()) {
         updateTag(membrosTag(empresaId));
+        if (usuarioIdDoMembro) {
+          updateTag(userTag(usuarioIdDoMembro));
+        }
       }
 
       return response;
@@ -235,6 +249,8 @@ class EmpresaService {
   // único membro ativo com esse papel, e bloqueia um membro de inativar a
   // si mesmo.
   inativarMembro(empresaId: string, membroId: string, usuarioSolicitanteId: string) {
+    let usuarioIdDoMembro: string | null = null;
+
     return DataBaseResponse.fromPromise(async () => {
       const membro = await db.membroEmpresa.findFirst({
         where: { id: membroId, empresaId, ativo: true },
@@ -259,10 +275,15 @@ class EmpresaService {
         }
       }
 
+      usuarioIdDoMembro = membro.usuarioId;
+
       return db.membroEmpresa.update({ where: { id: membroId }, data: { ativo: false } });
     }).then((response) => {
       if (response.isSuccess()) {
         updateTag(membrosTag(empresaId));
+        if (usuarioIdDoMembro) {
+          updateTag(userTag(usuarioIdDoMembro));
+        }
       }
 
       return response;
@@ -484,6 +505,7 @@ class EmpresaService {
         updateTag(membrosTag(response.data.empresaId));
         updateTag(convitesTag(response.data.empresaId));
         updateTag(empresasDoUsuarioTag(usuario.id));
+        updateTag(userTag(usuario.id));
       }
 
       return response;

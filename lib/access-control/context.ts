@@ -1,6 +1,8 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { papeisTag, userTag } from "@/lib/services/config/cache-tags";
 import { planoService } from "@/lib/services/plano.service";
 import { AuthenticationRequiredError } from "./errors";
 
@@ -27,18 +29,19 @@ export type AccessContext = {
   membroEmpresa: MembroEmpresaContexto | null;
 };
 
-export async function getAccessContext(): Promise<AccessContext> {
-  const session = await auth();
-  const usuarioId = session?.user?.id;
+// Vínculos de empresa do usuário — não inclui as permissões do papel nem a
+// matriz do plano de propósito: essas duas mudam por motivos diferentes
+// (edição de papel, edição de plano) e são cacheadas/invalidadas cada uma
+// pela sua própria tag (buscarPapelParaAccessContextCached, abaixo, e
+// planoService.buscarMatriz). Compor assim evita ter que invalidar o cache
+// de cada usuário da empresa quando só a permissão de um papel muda.
+async function buscarUsuarioComMembrosCached(usuarioId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(userTag(usuarioId));
 
-  if (!usuarioId) {
-    throw new AuthenticationRequiredError();
-  }
-
-  const usuario = await db.user.findUnique({
-    where: {
-      id: usuarioId,
-    },
+  return db.user.findUnique({
+    where: { id: usuarioId },
     select: {
       id: true,
       isAdmin: true,
@@ -48,9 +51,6 @@ export async function getAccessContext(): Promise<AccessContext> {
           id: true,
           empresaId: true,
           roleId: true,
-          role: {
-            select: { nome: true, permissoes: true },
-          },
           empresa: {
             select: { planoId: true },
           },
@@ -59,6 +59,28 @@ export async function getAccessContext(): Promise<AccessContext> {
       },
     },
   });
+}
+
+async function buscarPapelParaAccessContextCached(roleId: string, empresaId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(papeisTag(empresaId));
+
+  return db.role.findUniqueOrThrow({
+    where: { id: roleId },
+    select: { nome: true, permissoes: true },
+  });
+}
+
+export async function getAccessContext(): Promise<AccessContext> {
+  const session = await auth();
+  const usuarioId = session?.user?.id;
+
+  if (!usuarioId) {
+    throw new AuthenticationRequiredError();
+  }
+
+  const usuario = await buscarUsuarioComMembrosCached(usuarioId);
 
   if (!usuario) {
     throw new AuthenticationRequiredError("Sessão inválida.");
@@ -72,22 +94,29 @@ export async function getAccessContext(): Promise<AccessContext> {
     usuario.membrosEmpresa[0] ??
     null;
 
-  const permissoesPlano = membroAtivo
-    ? await planoService.buscarMatriz(membroAtivo.empresa.planoId)
-    : {};
+  if (!membroAtivo) {
+    return {
+      usuarioId: usuario.id,
+      isAdmin: usuario.isAdmin,
+      membroEmpresa: null,
+    };
+  }
+
+  const [role, permissoesPlano] = await Promise.all([
+    buscarPapelParaAccessContextCached(membroAtivo.roleId, membroAtivo.empresaId),
+    planoService.buscarMatriz(membroAtivo.empresa.planoId),
+  ]);
 
   return {
     usuarioId: usuario.id,
     isAdmin: usuario.isAdmin,
-    membroEmpresa: membroAtivo
-      ? {
-          membroId: membroAtivo.id,
-          empresaId: membroAtivo.empresaId,
-          roleId: membroAtivo.roleId,
-          roleNome: membroAtivo.role.nome,
-          permissoes: membroAtivo.role.permissoes,
-          permissoesPlano,
-        }
-      : null,
+    membroEmpresa: {
+      membroId: membroAtivo.id,
+      empresaId: membroAtivo.empresaId,
+      roleId: membroAtivo.roleId,
+      roleNome: role.nome,
+      permissoes: role.permissoes,
+      permissoesPlano,
+    },
   };
 }
