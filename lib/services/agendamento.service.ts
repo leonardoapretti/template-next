@@ -1,6 +1,8 @@
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import type { EventoRaw } from "@/app/agenda/_components/engine/agendamento.types";
 import { expandirEventosNaJanela } from "@/app/agenda/_components/engine/expandir-recorrencias";
 import { db } from "../db";
+import { eventosAgendaTag } from "./config/cache-tags";
 import { diaAnterior } from "../utils/data";
 
 type JanelaAgendamento = {
@@ -63,51 +65,63 @@ function normalizarEventoInput(input: CriarEventoInput) {
   };
 }
 
-class AgendamentoService {
-  async buscarEventosNaJanela(empresaId: string, janela: JanelaAgendamento) {
-    return db.evento.findMany({
-      where: {
-        empresaId,
-        data: {
-          lte: janela.fim,
-        },
-        OR: [
-          {
-            recorrencia: "NENHUMA",
-          },
-          {
-            recorrenciaAte: null,
-          },
-          {
-            recorrenciaAte: {
-              gte: janela.inicio,
-            },
-          },
-        ],
+async function buscarEventosNaJanelaCached(empresaId: string, janela: JanelaAgendamento) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(eventosAgendaTag(empresaId));
+
+  return db.evento.findMany({
+    where: {
+      empresaId,
+      data: {
+        lte: janela.fim,
       },
-      include: {
-        excecoes: true,
-      },
-      orderBy: [
+      OR: [
         {
-          data: "asc",
+          recorrencia: "NENHUMA",
         },
         {
-          horaInicio: "asc",
+          recorrenciaAte: null,
+        },
+        {
+          recorrenciaAte: {
+            gte: janela.inicio,
+          },
         },
       ],
-    });
+    },
+    include: {
+      excecoes: true,
+    },
+    orderBy: [
+      {
+        data: "asc",
+      },
+      {
+        horaInicio: "asc",
+      },
+    ],
+  });
+}
+
+class AgendamentoService {
+  async buscarEventosNaJanela(empresaId: string, janela: JanelaAgendamento) {
+    return buscarEventosNaJanelaCached(empresaId, janela);
   }
 
   async criarEvento(empresaId: string, input: CriarEventoInput) {
     const data = normalizarEventoInput(input);
 
-    return db.evento.create({
+    const evento = await db.evento.create({
       data: {
         ...data,
         empresaId,
       },
     });
+
+    updateTag(eventosAgendaTag(empresaId));
+
+    return evento;
   }
 
   async atualizarEvento(empresaId: string, input: AtualizarEventoInput) {
@@ -117,20 +131,21 @@ class AgendamentoService {
 
     const data = normalizarEventoInput(input);
 
-    if (evento.recorrencia === "NENHUMA" || !input.escopoRecorrencia || !input.dataOriginal) {
-      return db.evento.update({
-        where: {
-          id: input.id,
-        },
-        data,
-      });
-    }
+    const resultado =
+      evento.recorrencia === "NENHUMA" || !input.escopoRecorrencia || !input.dataOriginal
+        ? await db.evento.update({
+            where: {
+              id: input.id,
+            },
+            data,
+          })
+        : input.escopoRecorrencia === "ESTE"
+          ? await this.atualizarSomenteOcorrencia(input)
+          : await this.atualizarDaquiPraFrente(evento, input, empresaId);
 
-    if (input.escopoRecorrencia === "ESTE") {
-      return this.atualizarSomenteOcorrencia(input);
-    }
+    updateTag(eventosAgendaTag(empresaId));
 
-    return this.atualizarDaquiPraFrente(evento, input, empresaId);
+    return resultado;
   }
 
   private atualizarSomenteOcorrencia(input: AtualizarEventoInput) {
@@ -227,6 +242,14 @@ class AgendamentoService {
   }
 
   async excluirEvento(empresaId: string, input: ExcluirEventoInput) {
+    const resultado = await this.excluirEventoNoBanco(empresaId, input);
+
+    updateTag(eventosAgendaTag(empresaId));
+
+    return resultado;
+  }
+
+  private async excluirEventoNoBanco(empresaId: string, input: ExcluirEventoInput) {
     const evento = await db.evento.findFirstOrThrow({
       where: { id: input.id, empresaId },
     });

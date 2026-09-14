@@ -1,11 +1,76 @@
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { NOME_ROLE_PROPRIETARIO, papeisPadraoDoSistema } from "@/lib/access-control/policy";
 import { getAppBaseUrl } from "@/lib/utils/routes/auth-links";
 import { db } from "../db";
 import { actionTokenService } from "./actiontoken.service";
 import { auditLogService } from "./audit-log.service";
 import { auditTxContext } from "./audit-log-context";
+import { convitesTag, empresaTag, empresasDoUsuarioTag, membrosTag } from "./config/cache-tags";
 import { DataBaseResponse } from "./config/database-response";
 import { criarEmailHtml, emailService } from "./email.service";
+
+async function listarDoUsuarioCached(usuarioId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(empresasDoUsuarioTag(usuarioId));
+
+  return db.membroEmpresa.findMany({
+    where: { usuarioId, ativo: true },
+    select: {
+      empresa: { select: { id: true, nome: true, ativo: true } },
+      role: { select: { nome: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+async function buscarPorIdCached(empresaId: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(empresaTag(empresaId));
+
+  return db.empresa.findUniqueOrThrow({ where: { id: empresaId } });
+}
+
+async function listarMembrosCached(empresaId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(membrosTag(empresaId));
+
+  return db.membroEmpresa.findMany({
+    where: { empresaId },
+    select: {
+      id: true,
+      usuarioId: true,
+      ativo: true,
+      usuario: { select: { nome: true, email: true } },
+      role: { select: { id: true, nome: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+async function listarConvitesPendentesCached(empresaId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(convitesTag(empresaId));
+
+  return db.actionToken.findMany({
+    where: {
+      tipo: "CONVITE_MEMBRO_EMPRESA",
+      empresaId,
+      usedAt: null,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    select: {
+      id: true,
+      email: true,
+      role: { select: { id: true, nome: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
 
 // Código do único plano existente hoje. Novas empresas nascem vinculadas
 // a ele quando existe; se ainda não foi semeado, a empresa nasce sem
@@ -76,34 +141,35 @@ class EmpresaService {
           return empresa;
         }),
       ),
-    );
+    ).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(empresasDoUsuarioTag(usuarioId));
+      }
+
+      return response;
+    });
   }
 
   // Empresas às quais o usuário tem vínculo ativo — base para a tela de
   // seleção/troca de empresa (um usuário pode ter vínculo com várias).
   listarDoUsuario(usuarioId: string) {
-    return DataBaseResponse.fromPromise(() =>
-      db.membroEmpresa.findMany({
-        where: { usuarioId, ativo: true },
-        select: {
-          empresa: { select: { id: true, nome: true, ativo: true } },
-          role: { select: { nome: true } },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-    );
+    return DataBaseResponse.fromPromise(() => listarDoUsuarioCached(usuarioId));
   }
 
   buscarPorId(empresaId: string) {
-    return DataBaseResponse.fromPromise(() =>
-      db.empresa.findUniqueOrThrow({ where: { id: empresaId } }),
-    );
+    return DataBaseResponse.fromPromise(() => buscarPorIdCached(empresaId));
   }
 
   atualizarConfiguracao(empresaId: string, input: { nome: string }) {
     return DataBaseResponse.fromPromise(() =>
       db.empresa.update({ where: { id: empresaId }, data: { nome: input.nome } }),
-    );
+    ).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(empresaTag(empresaId));
+      }
+
+      return response;
+    });
   }
 
   // Confirma que o usuário tem vínculo ativo com a empresa antes de
@@ -121,19 +187,7 @@ class EmpresaService {
   // Traz ativos e inativos — a tela de membros filtra por status na
   // própria data-table, então precisa dos dois pra o filtro fazer sentido.
   listarMembros(empresaId: string) {
-    return DataBaseResponse.fromPromise(() =>
-      db.membroEmpresa.findMany({
-        where: { empresaId },
-        select: {
-          id: true,
-          usuarioId: true,
-          ativo: true,
-          usuario: { select: { nome: true, email: true } },
-          role: { select: { id: true, nome: true } },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-    );
+    return DataBaseResponse.fromPromise(() => listarMembrosCached(empresaId));
   }
 
   // Convites de CONVITE_MEMBRO_EMPRESA ainda pendentes (não aceitos, não
@@ -141,23 +195,7 @@ class EmpresaService {
   // mesma lista com status "Convite enviado", pra quem convidou saber que
   // já convidou sem precisar ir na tela de e-mails/logs.
   listarConvitesPendentes(empresaId: string) {
-    return DataBaseResponse.fromPromise(() =>
-      db.actionToken.findMany({
-        where: {
-          tipo: "CONVITE_MEMBRO_EMPRESA",
-          empresaId,
-          usedAt: null,
-          revokedAt: null,
-          expiresAt: { gt: new Date() },
-        },
-        select: {
-          id: true,
-          email: true,
-          role: { select: { id: true, nome: true } },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-    );
+    return DataBaseResponse.fromPromise(() => listarConvitesPendentesCached(empresaId));
   }
 
   // Troca o papel de um membro da empresa — sempre confirma que o membro
@@ -184,6 +222,12 @@ class EmpresaService {
       }
 
       return db.membroEmpresa.update({ where: { id: membroId }, data: { roleId } });
+    }).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(membrosTag(empresaId));
+      }
+
+      return response;
     });
   }
 
@@ -216,6 +260,12 @@ class EmpresaService {
       }
 
       return db.membroEmpresa.update({ where: { id: membroId }, data: { ativo: false } });
+    }).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(membrosTag(empresaId));
+      }
+
+      return response;
     });
   }
 
@@ -266,6 +316,12 @@ class EmpresaService {
       }
 
       return { enviado: true };
+    }).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(convitesTag(input.empresaId));
+      }
+
+      return response;
     });
   }
 
@@ -293,6 +349,12 @@ class EmpresaService {
         where: { id: actionToken.id },
         data: { revokedAt: new Date() },
       });
+    }).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(convitesTag(empresaId));
+      }
+
+      return response;
     });
   }
 
@@ -417,7 +479,15 @@ class EmpresaService {
           return { empresaId: actionToken.empresaId };
         }),
       ),
-    );
+    ).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(membrosTag(response.data.empresaId));
+        updateTag(convitesTag(response.data.empresaId));
+        updateTag(empresasDoUsuarioTag(usuario.id));
+      }
+
+      return response;
+    });
   }
 }
 
