@@ -1,6 +1,7 @@
 import { Activity, ArrowRight, BookOpen, KeyRound, Lock, Mail, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,7 @@ const recursos = [
   },
 ];
 
-export default async function Home() {
-  const session = await auth();
-
+export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
@@ -58,26 +57,9 @@ export default async function Home() {
 
           <nav className="flex items-center gap-2" aria-label="Acesso à conta">
             <ThemeToggle />
-            {session?.user ? (
-              <UserNavIndicator
-                name={session.user.nome ?? session.user.email ?? "Usuário"}
-                email={session.user.email ?? ""}
-              />
-            ) : (
-              <>
-                <Button
-                  nativeButton={false}
-                  render={<Link href="/login" />}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Entrar
-                </Button>
-                <Button nativeButton={false} render={<Link href="/cadastro" />} size="sm">
-                  Criar conta
-                </Button>
-              </>
-            )}
+            <Suspense fallback={<GuestNavActions />}>
+              <AccountNavActions />
+            </Suspense>
           </nav>
         </div>
       </header>
@@ -203,5 +185,33 @@ export default async function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+function GuestNavActions() {
+  return (
+    <>
+      <Button nativeButton={false} render={<Link href="/login" />} size="sm" variant="ghost">
+        Entrar
+      </Button>
+      <Button nativeButton={false} render={<Link href="/cadastro" />} size="sm">
+        Criar conta
+      </Button>
+    </>
+  );
+}
+
+async function AccountNavActions() {
+  const session = await auth();
+
+  if (!session?.user) {
+    return <GuestNavActions />;
+  }
+
+  return (
+    <UserNavIndicator
+      name={session.user.nome ?? session.user.email ?? "Usuário"}
+      email={session.user.email ?? ""}
+    />
   );
 }

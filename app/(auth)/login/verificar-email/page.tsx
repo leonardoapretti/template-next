@@ -8,6 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { userService } from "@/lib/services/user.service";
 import VerificarEmailForm from "./_components/verificar-email-form";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type VerificarEmailPageProps = {
   searchParams?: Promise<{
     email?: string;

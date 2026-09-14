@@ -16,6 +16,10 @@ import {
 } from "@/components/pages/detalhes";
 import { Badge } from "@/components/ui/badge";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 // Dado mockado — em uma implementação real, isso viria de um service
 // (ex: produtoService.buscarPorId(id)) que retorna DataBaseResponse.
 const PRODUTO_EXEMPLO = {

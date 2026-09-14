@@ -1,0 +1,65 @@
+---
+title: Migração para Cache Components
+description: Plano de adoção do Cache Components (Next 16) para cache de leituras de banco e invalidação correta.
+docId: migracao-cache-components
+icon: Database
+---
+
+Plano de migração do modelo de cache atual (sem `cacheComponents`) para o [Cache Components](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents) do Next 16, para que as leituras feitas pela camada de [service](/docs/banco-de-dados) fiquem cacheadas com tempo de vida explícito e as mutações invalidem exatamente o que mudou.
+
+Decisões confirmadas:
+
+- Migração conduzida manualmente, fase por fase, sem instalar o skill oficial da Vercel (`next-cache-components-adoption`).
+- Para tudo que envolve permissões/membros/papéis/planos/empresa ativa: sempre `updateTag` (invalidação imediata, read-your-own-writes), nunca `revalidateTag` (stale-while-revalidate) — correção acima de performance de cache.
+
+## Inventário (levantado antes de iniciar)
+
+- Nenhuma página/layout chama Prisma diretamente; tudo passa por `lib/services/*.service.ts` (`empresaService`, `roleService`, `planoService`, `userService`, `agendamentoService`). Cliente Prisma: `lib/db.ts`, exportado como `db`.
+- Único uso de `cookies()`/`headers()` em caminho de renderização: `getAccessContext()` em `lib/access-control/context.ts` (lê cookie `empresa_ativa_id`, faz `db.user.findUnique` com memberships, e chama `planoService.buscarMatriz`, hoje `React.cache()`).
+- `getAccessContext()`/`auth()` são chamados sem `<Suspense>` no topo de ~11 layouts/pages: `app/dashboard/layout.tsx`, `app/dashboard/empresa/layout.tsx`, `app/agenda/layout.tsx`, `app/(admin)/admin/layout.tsx`, `app/dashboard/docs/layout.tsx`, `app/dashboard/emails/layout.tsx`, `components/sidebar/layout.tsx`, e as pages `app/dashboard/page.tsx`, `app/dashboard/empresa/page.tsx`, `app/dashboard/empresa/membros/page.tsx`, `app/dashboard/empresa/papeis/page.tsx`, `app/dashboard/exemplos/page.tsx`, `app/(admin)/admin/planos/page.tsx`, além de `app/(auth)/*` e `app/page.tsx` com `auth()`.
+- Server Actions com `revalidatePath` que vão ganhar `updateTag` complementar: `app/dashboard/_components/actions.ts`, `app/dashboard/empresa/membros/_components/actions.ts` (×5), `app/dashboard/empresa/papeis/_components/actions.ts` (×4), `app/agenda/_components/engine/agendamento.actions.ts`, `app/(admin)/admin/planos/_components/actions.ts` (×2), `components/sidebar/actions.ts`.
+- Nenhum `export const dynamic/revalidate/fetchCache` hoje.
+- Serviços retornam `DataBaseResponse` ([ver banco de dados](/docs/banco-de-dados)) em vez de dado cru — a compatibilidade desse wrapper com a serialização exigida por `"use cache"` precisa ser verificada no início da Fase 1.
+
+## Fase 0 — Habilitar a flag e estabilizar o build
+
+- [x] Adicionar `cacheComponents: true` em `next.config.ts`.
+- [x] Rodar `npx @next/codemod@canary cache-components-instant-false ./app` (opt-out mecânico de todas as rotas via `export const instant = false`, 32 arquivos).
+- [x] `tsc --noEmit` + `next dev` para confirmar ausência de erros de IO síncrono. Encontrado um caso real: `app/page.tsx` chamava `auth()` (que faz `crypto.getRandomValues()` internamente ao decodificar a sessão) no topo da página, bloqueando o prerender mesmo com `instant = false` (esse erro não é suprimido pelo opt-out). Corrigido movendo a leitura de sessão para um componente `AccountNavActions` dentro de `<Suspense fallback={<GuestNavActions />}>`, removendo o `instant = false` dessa rota — ela já está migrada.
+- [x] Commit isolado, sem mudança de comportamento visível (pendente de commit pelo usuário).
+
+## Fase 1 — Cachear a camada de serviço
+
+- [x] Confirmado: `DataBaseResponse` é instância de classe (`DataBaseSuccess`/`DataBaseError` dentro), não serializável como retorno de `"use cache"`. Solução adotada: a query Prisma crua vira uma função `"use cache"` module-level (não exportada), e o método público do service continua chamando `DataBaseResponse.fromPromise(() => funcaoCached(...))` — a API pública do service não muda.
+- [x] Tags centralizadas em `lib/services/config/cache-tags.ts` (uma função por entidade: `empresaTag`, `membrosTag`, `convitesTag`, `empresasDoUsuarioTag`, `planoMatrizTag`, `eventosAgendaTag`) — evita divergência entre a tag usada na leitura (`cacheTag`) e na invalidação (`updateTag`).
+- [x] `empresa.service.ts`: cacheadas `buscarPorId` (`cacheLife('hours')`), `listarDoUsuario`, `listarMembros`, `listarConvitesPendentes` (`cacheLife('minutes')`). `updateTag` adicionado em `criarEmpresa`, `atualizarConfiguracao`, `alterarPapelMembro`, `inativarMembro`, `criarConviteEEnviar`, `revogarConvite`, `aceitarConvite`.
+- [x] `plano.service.ts`: `buscarMatriz` convertido de `React.cache()` (memoização por request) para `"use cache"` + `cacheTag('plano-matriz:...')`, `cacheLife('hours')` — agora persiste entre requests, não só dentro de um. `updateTag` em `salvarMatriz`.
+- [x] `agendamento.service.ts`: `buscarEventosNaJanela` cacheado (`cacheLife('minutes')`, tag por empresa). `updateTag` em `criarEvento`, `atualizarEvento` e `excluirEvento`.
+- **Decisão de design (diverge do texto original do plano):** o `updateTag` foi colocado dentro do próprio método do service, logo após a escrita, em vez de nas `actions.ts` (que é onde `revalidatePath` já vive hoje). Motivo: a tag é definida no mesmo arquivo que a lê (`cacheTag`), então a invalidação correspondente fica ao lado, reduzindo o risco de esquecer de invalidar ou digitar uma tag diferente numa `actions.ts` distante. `revalidatePath` nas actions continua como estava, sem mudança.
+- **Pendência descoberta durante a implementação — decisão de arquitetura necessária antes de continuar:** `role.service.ts` e `user.service.ts` estendem `BaseService`, cujos métodos genéricos (`recuperarTodos`, `recuperar`, `atualizar`, `remover`) resolvem automaticamente um `where` de escopo chamando `getUsuarioAtualContexto()` → `getAccessContext()` → `cookies()`. Isso significa que `roleService.listarTodos()` e `roleService.listarComContagemDeMembros()` leem cookie *por dentro* do método, então não dá pra simplesmente envolver com `"use cache"` (que proíbe `cookies()` na pilha de chamadas) sem antes reestruturar esse mecanismo de auto-scoping — que é o mecanismo de segurança que impede uma empresa ver dados de outra. Refatorar isso não é "só adicionar use cache": muda a forma como o escopo de segurança é resolvido em um helper compartilhado por outros services. Fica registrado aqui como decisão em aberto, não decidi unilateralmente por não ser trivial de inferir com segurança. `userService`, felizmente, tem seus métodos de leitura usados em render (`recuperarPorEmail`, `confirmarEmailContaPorToken`, etc.) implementados com `db.user`/`db.actionToken` direto, sem passar por `BaseService`, então não têm esse problema — ainda não cacheados nesta fase, ficam para continuidade.
+- [ ] Extrair a parte de banco de `getAccessContext()` (`db.user.findUnique` com memberships) para uma função interna cacheada, recebendo `userId` como argumento — fica para a Fase 2, junto da extração do gate de autenticação (fazem parte do mesmo componente).
+
+## Fase 2 — Extrair o "gate" de autenticação para trás de Suspense
+
+- [ ] Criar um componente Server (`AccessGate` ou equivalente) que encapsula `getAccessContext()`/`auth()` + os redirects, recebendo `children`.
+- [ ] Envolver cada layout/page do inventário com `<Suspense fallback={...}><AccessGate>{children}</AccessGate></Suspense>`, reaproveitando os `loading.tsx` já existentes quando fizer sentido.
+
+## Fase 3 — Converter rota por rota, removendo `instant = false`
+
+Ordem: (1) páginas públicas/auth → (2) `admin/planos` → (3) `dashboard/empresa/membros` e `papeis` → (4) `agenda` → (5) demais páginas do dashboard. Uma área por vez, validando com `pnpm dev` e os insights do dev overlay antes de seguir para a próxima.
+
+## Fase 4 — Auditoria de invalidação nas Server Actions
+
+- [ ] Revisar as 6 actions.ts do inventário: manter `revalidatePath`, adicionar `updateTag` para cada tag da Fase 1 afetada pela mutação.
+- [ ] Confirmar que nenhuma invalidação precisa rodar fora de Server Action (route handler/webhook), o que exigiria `revalidateTag` com profile em vez de `updateTag`.
+
+## Fase 5 — Validação
+
+- [ ] `pnpm typecheck` e `pnpm lint` a cada fase.
+- [ ] Testes automatizados das áreas tocadas; adicionar cobertura para leitura cacheada + invalidação imediata pós-mutação onde não existir.
+- [ ] Smoke test manual: login → dashboard → trocar empresa ativa → CRUD de membro → CRUD de papel/matriz → matriz de plano (admin) → CRUD de evento de agenda.
+- [ ] `pnpm build` ao final de todas as fases (pedir confirmação explícita antes de rodar, por ser exceção à regra padrão do projeto de não rodar build).
+
+## Observação sobre escopo
+
+Migração grande (~30 arquivos entre services, layouts, pages e actions) num app multi-tenant com permissões. Cada fase é independentemente testável e deve ser validada antes de avançar para a próxima.
