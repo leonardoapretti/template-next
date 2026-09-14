@@ -104,6 +104,20 @@ Se não houver nada relevante além da implementação, responda apenas de forma
 * Reutilize transações quando uma operação precisar ser atômica.
 * Nunca edite o SQL de uma migration já aplicada a um banco (local ou não) para corrigi-la. Uma vez aplicada, a migration está registrada no histórico do Prisma (`_prisma_migrations`) com um hash do conteúdo; editar o arquivo depois quebra esse histórico. Para corrigir, crie uma nova migration que desfaça ou ajuste o que for necessário.
 
+## Cache (Cache Components)
+
+O projeto usa o Cache Components do Next.js (`cacheComponents: true` em `next.config.ts`). Consulte `/docs/migracao-cache-components` para o histórico completo da migração e o raciocínio por trás das decisões abaixo.
+
+* Toda leitura de banco na camada de service (`lib/services/*.service.ts`) que alimenta uma página ou é reaproveitada entre requests deve ser cacheada com `"use cache"` + `cacheLife` + `cacheTag` (de `next/cache`), não deixada sem cache "porque é simples".
+* `DataBaseResponse` (classe, `lib/services/config/database-response.ts`) não é serializável como retorno de `"use cache"`. Padrão: a query crua vira uma função `"use cache"` module-level (não exportada), e o método público do service continua chamando `DataBaseResponse.fromPromise(() => funcaoCached(...))` — nunca coloque `"use cache"` direto num método que retorna `DataBaseResponse`.
+* Toda tag de cache (`cacheTag`) deve vir de `lib/services/config/cache-tags.ts` — nunca escreva a string da tag solta em outro arquivo. Se uma entidade nova precisar de tag, adicione a função lá.
+* Toda mutação que afeta um dado cacheado deve invalidar com `updateTag(tag)` usando a mesma tag da leitura — nunca `revalidateTag` (stale-while-revalidate) para dados administrativos/de permissão: o padrão deste projeto é sempre invalidação imediata (read-your-own-writes). Coloque o `updateTag` no próprio método do service, logo após a escrita, ao lado da definição do `cacheTag` correspondente — não nas `actions.ts` (evita divergência entre tag lida e tag invalidada). Mantenha o `revalidatePath` que já existir nas actions, sem removê-lo.
+* Nunca cacheie uma função que lê `cookies()`/`headers()` diretamente (isso lança erro em runtime). Extraia o valor fora da função cacheada e passe como argumento — ver `getAccessContext()` em `lib/access-control/context.ts` como referência do padrão (decompõe em camadas cacheadas separadas por tag, cada uma invalidada só pelo que a afeta).
+* Cuidado com dados agregados/aninhados que dependem de mais de uma entidade (ex.: permissões de um papel embutidas na leitura de um usuário): decomponha em funções cacheadas separadas, cada uma com sua própria tag, em vez de uma leitura só — senão a invalidação de uma mudança pequena (ex.: editar um papel) obrigaria invalidar o cache de todos os usuários afetados.
+* `role.service.ts` e `user.service.ts` estendem `BaseService` (`lib/services/config/base-service.ts`). Os métodos genéricos dele (`recuperar`, `recuperarTodos`, `atualizar`, `remover`) resolvem escopo automaticamente via `getUsuarioAtualContexto()`/cookies quando o service usa a opção `scope` — não dá pra colocar `"use cache"` nesses métodos sem antes fazer o método receber o valor de escopo (ex. `empresaId`) como argumento explícito, em vez de resolvê-lo sozinho.
+* Rotas 100% autenticadas (dashboard, agenda, admin) mantêm `export const instant = false` de propósito — não é uma pendência a resolver, é uma decisão: não existe conteúdo público nelas que justifique pré-renderização de shell estático. Não tente "consertar" isso removendo o `instant = false` sem necessidade real.
+* Em testes (Vitest) que exercitam a implementação real (não mockada) de um service com `"use cache"`, mocke `next/cache` incluindo `cacheLife`, `cacheTag` e `updateTag` — essas funções lançam erro fora do runtime do Next com `cacheComponents` habilitado.
+
 ## Segurança
 
 * Nunca exponha secrets, tokens, senhas ou variáveis sensíveis.
