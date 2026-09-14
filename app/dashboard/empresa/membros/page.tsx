@@ -26,7 +26,7 @@ export default async function MembrosEmpresaPage() {
   const [membrosResponse, convitesResponse, rolesResponse] = await Promise.all([
     empresaService.listarMembros(ctx.membroEmpresa.empresaId),
     empresaService.listarConvitesPendentes(ctx.membroEmpresa.empresaId),
-    roleService.listarTodos(),
+    roleService.listarTodos(ctx.membroEmpresa.empresaId),
   ]);
 
   const membros = membrosResponse.isSuccess() ? membrosResponse.data : [];

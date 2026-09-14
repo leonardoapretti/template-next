@@ -32,7 +32,7 @@ export default async function PapeisEmpresaPage({
   const params = await searchParams;
   const papelIdParam = Array.isArray(params.papelId) ? params.papelId[0] : params.papelId;
 
-  const response = await roleService.listarComContagemDeMembros();
+  const response = await roleService.listarComContagemDeMembros(ctx.membroEmpresa.empresaId);
   const papeis = response.isSuccess() ? response.data : [];
 
   const papelSelecionado = papeis.find((papel) => papel.id === papelIdParam) ?? papeis[0] ?? null;

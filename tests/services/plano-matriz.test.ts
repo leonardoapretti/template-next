@@ -9,6 +9,15 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// buscarMatriz usa "use cache" (cacheLife/cacheTag), que só funciona dentro
+// do runtime do Next com cacheComponents habilitado — fora dele (como aqui,
+// no Vitest) essas funções lançam. Mockamos como no-op pra testar só a
+// lógica da função, sem a camada de cache do framework.
+vi.mock("next/cache", () => ({
+  cacheLife: vi.fn(),
+  cacheTag: vi.fn(),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });

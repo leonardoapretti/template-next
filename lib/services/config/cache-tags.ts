@@ -10,6 +10,10 @@ export function membrosTag(empresaId: string) {
   return `membros:${empresaId}`;
 }
 
+export function papeisTag(empresaId: string) {
+  return `papeis:${empresaId}`;
+}
+
 export function convitesTag(empresaId: string) {
   return `convites:${empresaId}`;
 }

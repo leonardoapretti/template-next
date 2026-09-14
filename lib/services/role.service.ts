@@ -1,7 +1,9 @@
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { aplicarDependenciasDeLeitura, permissionKeys } from "@/lib/access-control/permission-registry";
 import { NOME_ROLE_PROPRIETARIO } from "@/lib/access-control/policy";
 import { db } from "../db";
 import { BaseService } from "./config/base-service";
+import { papeisTag } from "./config/cache-tags";
 import { DataBaseResponse } from "./config/database-response";
 
 // Normaliza a trava de leitura também no servidor (não só na UI) — a
@@ -15,6 +17,36 @@ function normalizarPermissoes(permissoes: string[]): string[] {
   return Object.entries(normalizado)
     .filter(([, permitido]) => permitido)
     .map(([chave]) => chave);
+}
+
+async function listarTodosCached(empresaId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(papeisTag(empresaId));
+
+  return db.role.findMany({
+    where: { empresaId },
+    orderBy: { nome: "asc" },
+    select: { id: true, nome: true, permissoes: true },
+  });
+}
+
+async function listarComContagemDeMembrosCached(empresaId: string) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(papeisTag(empresaId));
+
+  return db.role.findMany({
+    where: { empresaId },
+    orderBy: { nome: "asc" },
+    select: {
+      id: true,
+      nome: true,
+      permissoes: true,
+      padraoSistema: true,
+      _count: { select: { membros: true } },
+    },
+  });
 }
 
 class RoleService extends BaseService<typeof db.role> {
@@ -43,44 +75,32 @@ class RoleService extends BaseService<typeof db.role> {
     });
   }
 
-  listarTodos() {
-    return DataBaseResponse.fromPromise(() =>
-      this.recuperarTodos({
-        orderBy: { nome: "asc" },
-        select: { id: true, nome: true, permissoes: true },
-      }),
-    );
+  // Recebe empresaId explícito (em vez de resolver via contexto/cookie
+  // internamente) porque o método é cacheado com "use cache", que não
+  // permite ler cookies() na pilha de chamadas. Quem chama já tem o
+  // empresaId da empresa ativa (getAccessContext), igual ao restante dos
+  // services (ver empresaService).
+  listarTodos(empresaId: string) {
+    return DataBaseResponse.fromPromise(() => listarTodosCached(empresaId));
   }
 
-  // Query própria (não via BaseService.recuperarTodos) porque a tipagem
-  // genérica do BaseService não propaga `select`/relações no retorno.
-  listarComContagemDeMembros() {
-    return DataBaseResponse.fromPromise(async () => {
-      const contexto = await this.contextoUsuarioAtual();
-
-      if (!contexto.empresaId) {
-        return [];
-      }
-
-      return db.role.findMany({
-        where: { empresaId: contexto.empresaId },
-        orderBy: { nome: "asc" },
-        select: {
-          id: true,
-          nome: true,
-          permissoes: true,
-          padraoSistema: true,
-          _count: { select: { membros: true } },
-        },
-      });
-    });
+  // Mesmo motivo de listarTodos acima: empresaId explícito pra poder
+  // cachear com "use cache".
+  listarComContagemDeMembros(empresaId: string) {
+    return DataBaseResponse.fromPromise(() => listarComContagemDeMembrosCached(empresaId));
   }
 
   // Cria um perfil de acesso customizado na empresa.
   criarPapel(empresaId: string, nome: string, permissoes: string[]) {
     return DataBaseResponse.fromPromise(() =>
       db.role.create({ data: { empresaId, nome, permissoes: normalizarPermissoes(permissoes) } }),
-    );
+    ).then((response) => {
+      if (response.isSuccess()) {
+        updateTag(papeisTag(empresaId));
+      }
+
+      return response;
+    });
   }
 
   // O Proprietário sempre tem todas as permissões (canUseFeature em
@@ -99,7 +119,14 @@ class RoleService extends BaseService<typeof db.role> {
         throw new Error("O perfil Proprietário sempre tem todas as permissões e não pode ser editado.");
       }
 
-      return this.atualizar({ where: { id }, data: { permissoes: normalizarPermissoes(permissoes) } });
+      const atualizado = await this.atualizar({
+        where: { id },
+        data: { permissoes: normalizarPermissoes(permissoes) },
+      });
+
+      updateTag(papeisTag(role.empresaId));
+
+      return atualizado;
     });
   }
 
@@ -118,7 +145,11 @@ class RoleService extends BaseService<typeof db.role> {
         throw new Error("Perfis padrão do sistema não podem ser renomeados.");
       }
 
-      return this.atualizar({ where: { id }, data: { nome } });
+      const atualizado = await this.atualizar({ where: { id }, data: { nome } });
+
+      updateTag(papeisTag(role.empresaId));
+
+      return atualizado;
     });
   }
 
@@ -148,6 +179,8 @@ class RoleService extends BaseService<typeof db.role> {
       }
 
       await db.role.delete({ where: { id } });
+
+      updateTag(papeisTag(role.empresaId));
     });
   }
 }
