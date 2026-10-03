@@ -5,4 +5,4 @@ echo "Aplicando migrations pendentes..."
 pnpm prisma migrate deploy
 
 echo "Iniciando aplicação..."
-exec pnpm start
+exec node .next/standalone/server.js
