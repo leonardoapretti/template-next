@@ -75,6 +75,10 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Sem isso o server.js standalone herda o HOSTNAME que o Docker atribui ao
+# container (o container ID) e o Next bind só nessa interface — fica
+# inacessível das outras redes docker (ex.: a rede `web` do Caddy).
+ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
