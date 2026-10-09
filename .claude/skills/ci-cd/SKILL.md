@@ -65,7 +65,7 @@ O gamehouse (`~/dev/gamehouse-org`) tem a mesma base e vai além; traga o que fi
 **Imagem e container**
 
 - **Segredo não vai em camada de imagem.** O `.env` entra no build só como secret do BuildKit (`RUN --mount=type=secret,id=env,target=/app/.env ...`, `secrets: env: file: .env` no compose); nunca volte a `ARG`/`ENV` para segredo, que fica no histórico do estágio de build na VPS. Segredos de **runtime** continuam em `env_file: .env` (só na VPS, permissão `600`, fora do git; `.dockerignore` já exclui `.env*`).
-- Runner enxuto e não-root (`USER nextjs`, já feito); copie só o necessário. Se o reset/cron ou scripts rodam `tsx` na imagem, o que eles importam (`lib`, `prisma`, `tsconfig.json`) tem de estar copiado — foi a causa do reset diário falhar desde 29/08.
+- Em produção o app roda com `no-new-privileges`, `cap_drop: [ALL]`, `mem_limit` e `pids_limit` (`docker-compose.prod.yml`). Runner enxuto e não-root (`USER nextjs`, já feito); copie só o necessário. Se o reset/cron ou scripts rodam `tsx` na imagem, o que eles importam (`lib`, `prisma`, `tsconfig.json`) tem de estar copiado — foi a causa do reset diário falhar desde 29/08.
 - Sem porta publicada em produção: `expose` + rede `web` atrás do Caddy (TLS e headers no proxy). Banco só na rede interna `db`, nunca exposto na internet. Em dev, o Postgres publica `5435` só no host local.
 - `HOSTNAME=0.0.0.0` no runner é necessário para o `server.js` standalone responder na rede do proxy.
 - Limite o que o container pode: `init: true` (já), considere `read_only`, `cap_drop: [ALL]`, `no-new-privileges`, limites de memória/CPU quando houver mais serviços na VPS.
@@ -75,7 +75,7 @@ O gamehouse (`~/dev/gamehouse-org`) tem a mesma base e vai além; traga o que fi
 
 - SSH só por chave, sem login de root por senha; firewall liberando apenas 22/80/443; fail2ban ou equivalente; atualizações de segurança automáticas.
 - `.env` com `chmod 600`, dono do usuário de deploy. Rotacione `NEXTAUTH_SECRET`, `ENCRYPTION_KEY` e senhas com plano (rotacionar `ENCRYPTION_KEY` exige recifrar dados: skill/doc de criptografia) e sempre que um acesso for revogado.
-- Backups do Postgres compartilhado testados por restore, não só existentes. O reset diário da demo **não pode** rodar em banco com dado real: trava por ambiente (só na demo pública) é obrigatória em qualquer derivação do template.
+- Backups do Postgres compartilhado testados por restore, não só existentes. O reset diário da demo **não pode** rodar em banco com dado real: `prisma/reset-demo.ts` só executa com `ALLOW_DEMO_RESET=true` no `.env` (defina só na demo pública; em app derivado, não defina e remova o cron).
 - Cron: um script versionado em `scripts/`, `flock`, log em arquivo com rotação e saída verificável. Cron sem alarme falha em silêncio — confira `grep finalizado` no log depois de mudar algo (a falha do reset ficou mais de um mês despercebida).
 
 ## Rollback

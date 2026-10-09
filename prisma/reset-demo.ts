@@ -8,6 +8,13 @@ import { seedAdmin } from "./seed-admin";
 // acumulam. Este script esvazia todas as tabelas do schema `public` (exceto
 // o controle de migrations do Prisma) e recria só o admin do seed.
 async function main() {
+  // Trava: o reset trunca o banco inteiro. Só roda onde o ambiente declara ser a
+  // demo pública (ALLOW_DEMO_RESET=true no .env); num app derivado com dados
+  // reais, a ausência da flag impede apagar tudo por engano.
+  if (process.env.ALLOW_DEMO_RESET !== "true") {
+    throw new Error("Reset recusado: defina ALLOW_DEMO_RESET=true apenas na demo pública.");
+  }
+
   const tabelas = await db.$queryRaw<{ tablename: string }[]>`
     SELECT tablename FROM pg_tables
     WHERE schemaname = 'public' AND tablename != '_prisma_migrations'

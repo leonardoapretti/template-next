@@ -9,6 +9,14 @@ services:
     # pela rede externa `db` (ver ~/postgres-vps no host). deploy.sh sobe
     # só o serviço `app`, então o `postgres` local nunca é iniciado aqui.
     depends_on: !reset {}
+    # Hardening do runtime: sem capabilities extras nem escalada de privilégio,
+    # e teto de memória para o app não derrubar os demais serviços da VPS.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 1g
+    pids_limit: 512
     networks:
       - default
       - web
