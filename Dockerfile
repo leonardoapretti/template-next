@@ -27,47 +27,15 @@ FROM base AS builder
 
 WORKDIR /app
 
-ARG DATABASE_URL
-ARG DB_HOST
-ARG DB_PORT
-ARG DB_USER
-ARG DB_PASSWORD
-ARG DB_NAME
-
-ARG NEXTAUTH_URL
-ARG NEXTAUTH_SECRET
-
-ARG AUTH_SECRET
-ARG AUTH_URL
-
-ARG ENCRYPTION_KEY
-
-ARG RESEND_API_KEY
-ARG RESEND_FROM_EMAIL
-ARG EMAIL_DESTINATARIO_DEV
-
-ENV DATABASE_URL=$DATABASE_URL \
-  DB_HOST=$DB_HOST \
-  DB_PORT=$DB_PORT \
-  DB_USER=$DB_USER \
-  DB_PASSWORD=$DB_PASSWORD \
-  DB_NAME=$DB_NAME \
-  NEXTAUTH_URL=$NEXTAUTH_URL \
-  NEXTAUTH_SECRET=$NEXTAUTH_SECRET \
-  AUTH_SECRET=$AUTH_SECRET \
-  AUTH_URL=$AUTH_URL \
-  ENCRYPTION_KEY=$ENCRYPTION_KEY \
-  RESEND_API_KEY=$RESEND_API_KEY \
-  RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL \
-  EMAIL_DESTINATARIO_DEV=$EMAIL_DESTINATARIO_DEV
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN pnpm prisma generate
-RUN pnpm test
+# O .env entra como secret do BuildKit (montado só durante o RUN) para não
+# deixar secrets nas camadas nem no histórico da imagem.
+RUN --mount=type=secret,id=env,target=/app/.env pnpm prisma generate
+RUN --mount=type=secret,id=env,target=/app/.env pnpm test
 RUN pnpm audit --prod
-RUN pnpm build
+RUN --mount=type=secret,id=env,target=/app/.env pnpm build
 
 
 FROM base AS runner
@@ -92,6 +60,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./.next/standalone/public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/standalone/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 COPY --from=builder --chown=nextjs:nodejs /app/generated ./generated
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts

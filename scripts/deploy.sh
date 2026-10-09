@@ -35,11 +35,24 @@ flock -n 200 || {
 log "Entrando no projeto..."
 cd "$PROJECT_DIR"
 
+# Guarda a imagem em produção para rollback se o novo container não subir.
+if docker image inspect template-next-app:latest >/dev/null 2>&1; then
+  docker tag template-next-app:latest template-next-app:anterior
+fi
+
 log "Buildando imagem..."
 $COMPOSE build --progress=plain app
 
 log "Subindo aplicação..."
-$COMPOSE up -d app
+if ! $COMPOSE up -d --wait --wait-timeout 120 app; then
+  echo "Container não ficou saudável."
+  if docker image inspect template-next-app:anterior >/dev/null 2>&1; then
+    echo "Voltando para a imagem anterior..."
+    docker tag template-next-app:anterior template-next-app:latest
+    $COMPOSE up -d --no-build app
+  fi
+  exit 1
+fi
 
 log "Status dos containers..."
 $COMPOSE ps

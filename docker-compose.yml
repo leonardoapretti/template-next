@@ -3,26 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        DATABASE_URL: ${DATABASE_URL}
-        DB_HOST: ${DB_HOST}
-        DB_PORT: ${DB_PORT}
-        DB_USER: ${DB_USER}
-        DB_PASSWORD: ${DB_PASSWORD}
-        DB_NAME: ${DB_NAME}
+      secrets:
+        - env
 
-        NEXTAUTH_URL: ${NEXTAUTH_URL}
-        NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-
-        AUTH_SECRET: ${AUTH_SECRET}
-        AUTH_URL: ${AUTH_URL}
-
-        ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-
-        RESEND_API_KEY: ${RESEND_API_KEY}
-        RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
-        EMAIL_DESTINATARIO_DEV: ${EMAIL_DESTINATARIO_DEV}
-  
     image: template-next-app:latest
     container_name: template-next-app
     restart: unless-stopped
@@ -47,6 +30,15 @@ services:
 
     ports:
       - "3000:3000"
+
+    # Critério de "deploy deu certo" (deploy.sh usa `up --wait`). start_period
+    # cobre o `prisma migrate deploy` que o entrypoint roda antes do server.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/login || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   postgres:
     image: postgres:17
@@ -80,3 +72,7 @@ services:
 
 volumes:
   postgres_data:
+
+secrets:
+  env:
+    file: .env
