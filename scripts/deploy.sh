@@ -58,7 +58,7 @@ log "Status dos containers..."
 $COMPOSE ps
 
 log "Limpando recursos Docker não utilizados..."
-docker builder prune -f
+docker builder prune -f --filter until=168h
 docker image prune -f
 
 log "Uso de disco:"
