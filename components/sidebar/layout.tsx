@@ -1,9 +1,11 @@
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { AppBreadcrumb } from "@/components/app-breadcrumbs";
 import { BreadcrumbLabelsProvider } from "@/components/app-breadcrumbs/breadcrumb-labels-context";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { getAccessContext } from "@/lib/access-control";
+import { SIDEBAR_COOKIE_NAME, sidebarAbertaPorPadrao } from "@/lib/dashboard/sidebar-estado";
 import { empresaService } from "@/lib/services/empresa.service";
 
 export type SidebarLayoutUser = {
@@ -43,6 +45,7 @@ export default async function SidebarLayout({
   content = "default",
 }: SidebarLayoutProps) {
   const session = await auth();
+  const cookieSidebar = (await cookies()).get(SIDEBAR_COOKIE_NAME)?.value;
   const ctx = session?.user?.id ? await getAccessContext().catch(() => null) : null;
 
   const empresasResponse = ctx ? await empresaService.listarDoUsuario(ctx.usuarioId) : null;
@@ -61,7 +64,7 @@ export default async function SidebarLayout({
       : null;
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={sidebarAbertaPorPadrao(cookieSidebar)}>
       <BreadcrumbLabelsProvider>
         {renderSidebar(session?.user, ctx?.isAdmin ?? false, empresaInfo, empresasDisponiveis)}
 
@@ -69,7 +72,7 @@ export default async function SidebarLayout({
           children
         ) : (
           <SidebarInset>
-            <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/85 px-4 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 print:hidden">
+            <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 print:hidden">
               <div className="flex min-w-0 items-center gap-2">
                 <SidebarTrigger className="-ml-1 hidden md:flex" />
                 <Separator
@@ -80,7 +83,9 @@ export default async function SidebarLayout({
               </div>
             </header>
 
-            <main className="flex flex-1 flex-col bg-background pb-16 md:pb-0">{children}</main>
+            <main className="flex flex-1 flex-col bg-background pb-16 md:pb-0 [@media(display-mode:standalone)]:pb-[calc(4rem+env(safe-area-inset-bottom))] md:[@media(display-mode:standalone)]:pb-0">
+              {children}
+            </main>
           </SidebarInset>
         )}
       </BreadcrumbLabelsProvider>

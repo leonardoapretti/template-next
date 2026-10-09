@@ -139,6 +139,10 @@ export function criarEmailHtml({
   `;
 }
 
+// Trava de segurança: a infra de e-mail (Resend) fica pronta, mas nenhum envio
+// sai da aplicação. Para liberar, altere esta constante conscientemente.
+const ENVIO_DE_EMAIL_HABILITADO = false;
+
 function resolverDestinatario(destinatario?: string) {
   return resendConfig.destinatarioDev ?? destinatario;
 }
@@ -176,6 +180,13 @@ class EmailService {
   }
 
   async enviarEmail(params: EnviarEmailParams) {
+    if (!ENVIO_DE_EMAIL_HABILITADO) {
+      return DataBaseResponse.error({
+        code: "EMAIL_DISABLED",
+        message: "O envio de e-mails está desabilitado nesta aplicação.",
+      });
+    }
+
     try {
       if (!params.texto && !params.html) {
         return DataBaseResponse.error({

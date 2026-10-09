@@ -20,7 +20,7 @@ export default function NavbarHeader({
   empresasDisponiveis,
 }: NavbarHeaderProps) {
   return (
-    <SidebarHeader className="gap-4">
+    <SidebarHeader className="gap-4 group-data-[collapsible=icon]:px-1">
       <div className="flex items-center justify-between">
         <LogoEmpresa
           empresaInfo={empresaInfo}
@@ -29,7 +29,7 @@ export default function NavbarHeader({
           perfilAtual={perfilAtual}
         />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
           <ThemeToggle />
         </div>
       </div>

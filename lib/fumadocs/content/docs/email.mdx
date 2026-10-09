@@ -7,6 +7,8 @@ icon: Mail
 
 O envio de e-mail usa [Resend](https://resend.com), configurado em `lib/email/resend.ts` e exposto pelo `emailService` (`lib/services/email.service.ts`).
 
+> **Envio desabilitado.** A infra está pronta, mas `emailService.enviarEmail` retorna `EMAIL_DISABLED` sem chamar o Resend (constante `ENVIO_DE_EMAIL_HABILITADO` em `lib/services/email.service.ts`). Os fluxos que dependem de e-mail (fale conosco, convites) falham com essa mensagem até a trava ser removida.
+
 ## Configuração
 
 Variáveis de ambiente:

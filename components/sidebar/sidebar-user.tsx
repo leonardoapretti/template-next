@@ -57,7 +57,7 @@ export function SidebarUser({
             render={
               <SidebarMenuButton
                 size="lg"
-                className="h-auto min-h-12 items-start py-2 aria-expanded:bg-muted group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:min-h-8"
+                className="h-auto min-h-12 items-start py-2 aria-expanded:bg-muted group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:min-h-10 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1!"
               />
             }
           >

@@ -95,7 +95,7 @@ export function LogoEmpresa({
             render={
               <SidebarMenuButton
                 size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:mx-auto"
               />
             }
           >
@@ -111,9 +111,9 @@ export function LogoEmpresa({
             </div>
 
             {isPending ? (
-              <Loader2Icon className="ml-auto size-4 animate-spin" />
+              <Loader2Icon className="ml-auto size-4 animate-spin group-data-[collapsible=icon]:hidden" />
             ) : (
-              <ChevronsUpDownIcon className="ml-auto size-4" />
+              <ChevronsUpDownIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
             )}
           </DropdownMenuTrigger>
 

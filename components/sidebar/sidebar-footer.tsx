@@ -10,7 +10,7 @@ type AppSidebarFooterProps = {
 
 export function AppSidebarFooter({ user, profileHref }: AppSidebarFooterProps) {
   return (
-    <SidebarFooter>
+    <SidebarFooter className="group-data-[collapsible=icon]:px-1">
       <SidebarMenu>
         <InstallPwaButton appName="Template" />
       </SidebarMenu>
