@@ -63,7 +63,9 @@ export default function VerificarEmailForm({ email }: VerificarEmailFormProps) {
           />
         </div>
 
-        {errors.email ? <p className="text-sm text-destructive">{errors.email.message}</p> : null}
+        {errors.email ? (
+          <p className="text-sm text-destructive-text">{errors.email.message}</p>
+        ) : null}
       </div>
 
       <Button type="submit" className="w-full" disabled={isPending || !isValid}>

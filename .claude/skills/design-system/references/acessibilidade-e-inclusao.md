@@ -50,5 +50,5 @@ Alvo: WCAG 2.2 AA. Acessibilidade aqui não é uma etapa final: entra junto do c
 1. Navegue a tela só com `Tab`/`Shift+Tab`/`Enter`/`Esc`.
 2. Aumente o zoom para 200% e reduza a janela a 320px.
 3. Alterne claro/escuro e o `prefers-reduced-motion`.
-4. Se mexeu em cor, confira a razão de contraste dos pares afetados nos dois temas (ver `contraste-e-cores.md`).
+4. `pnpm test tests/utils/contraste-tokens.test.ts` se mexeu em cor.
 5. Leia a tela com um leitor de tela (VoiceOver/NVDA) quando criar um padrão novo.

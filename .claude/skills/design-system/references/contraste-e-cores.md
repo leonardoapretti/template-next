@@ -1,6 +1,6 @@
 # Contraste, cores e temas claro/escuro
 
-Meta do projeto: **WCAG 2.2 nível AA** nos dois temas. Os tokens vêm de `app/globals.css` (par claro/`.dark`). O template ainda **não tem teste automatizado de contraste** dos tokens: ao mudar ou criar um token de cor, calcule a razão dos pares afetados nos dois temas antes de usar (se um app derivado adotar um teste, registre-o aqui).
+Meta do projeto: **WCAG 2.2 nível AA** nos dois temas. Os tokens vêm de `app/globals.css` (par claro/`.dark`) e são verificados por `tests/utils/contraste-tokens.test.ts` — se um par cair abaixo do mínimo, o teste falha. Ao mudar um token de cor, rode `pnpm test tests/utils/contraste-tokens.test.ts`.
 
 ## Mínimos
 
@@ -17,11 +17,13 @@ Meta do projeto: **WCAG 2.2 nível AA** nos dois temas. Os tokens vêm de `app/g
 |---|---|---|
 | Texto principal | `text-foreground` | — |
 | Texto secundário | `text-muted-foreground` | reduzir com `opacity-*` ou `text-foreground/50` |
+| Link ou texto de destaque | `text-primary-text` | `text-primary` como texto (é cor de preenchimento) |
 | Botão/selo de destaque | `bg-primary text-primary-foreground` | texto branco/preto solto |
-| Sucesso / informação / aviso / erro | `success` · `info` · `warning` · `destructive` (+ `-foreground` sobre fundo cheio) | `text-white` / `text-black` soltos |
-| Texto sobre fundo **translúcido** (`bg-success/10`, badge, alerta tingido) | confira o contraste real nos dois temas: o token de texto pensado para fundo liso pode cair abaixo de 4,5:1 sobre a própria tinta (principalmente no escuro) | assumir que passa |
+| Texto ou ícone de sucesso / informação / erro sobre fundo liso | `text-success` · `text-info` · `text-destructive` (ícone); texto escrito: `-text` | — |
+| Texto sobre fundo **translúcido** (`bg-success/10`, badge, alerta tingido) e mensagem de erro | `text-success-text` · `text-info-text` · `text-destructive-text` · `text-warning-text` | `text-success` etc. sobre a própria tinta; `text-red-500` |
+| Texto sobre fundo cheio | `text-success-foreground` · `text-info-foreground` · `text-warning-foreground` · `text-destructive-foreground` | `text-white` / `text-black` soltos |
 
-Regra de bolso: **o par existe? use-o. Não existe? crie o par no `globals.css` (com o valor nos dois temas) e confira a razão** antes de usar.
+Regra de bolso: **o par existe? use-o. Não existe? crie o par no `globals.css` (com o valor nos dois temas) e adicione ao teste** antes de usar.
 
 ## Cor nunca é o único sinal
 
@@ -37,4 +39,8 @@ Estado (erro, sucesso, pendente, selecionado) sempre tem **texto ou ícone** al�
 
 ## Borda de campo e foco
 
-`--input` (borda de campo) e `--ring` (anel de foco) devem ter ≥ 3:1 contra `background` e `card` nos dois temas (WCAG 1.4.11). `--border` é sutil (separadores decorativos): **não use `border-border` como única marca de um campo ou controle** — use `border-input`.
+`--input` (borda de campo) e `--ring` (anel de foco) devem ter ≥ 3:1 contra `background` e `card` nos dois temas (WCAG 1.4.11), também verificado pelo teste. `--border` é sutil (separadores decorativos): **não use `border-border` como única marca de um campo ou controle** — use `border-input`.
+
+## Pendência conhecida
+
+- `app/agenda/_components/status-styles.tsx` usa `text-white` sobre `bg-yellow-500`/`bg-blue-500` e cores `yellow-*`/`blue-*` fixas — fora de escopo por enquanto; corrigir ao retomar a agenda.

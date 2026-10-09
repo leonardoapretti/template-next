@@ -17,7 +17,7 @@ Ambas compartilham os mesmos princípios de UX e o catálogo de componentes (`co
 1. **Sempre leia `references/geral.md` primeiro** — hierarquia de ações, Button vs Link, estados, acessibilidade, consistência.
 2. Rota começa com `/dashboard`, `/admin` ou `/agenda` → leia também `references/admin.md`.
 3. Conforme o que a tarefa toca, leia também (vale para as duas áreas e os dois temas):
-   - Cor, badge, alerta, fundo translúcido, tema claro/escuro, token novo → `references/contraste-e-cores.md`.
+   - Cor, badge, alerta, fundo translúcido, tema claro/escuro, token novo → `references/contraste-e-cores.md`. Mudou token em `globals.css`? Rode `pnpm test tests/utils/contraste-tokens.test.ts`.
    - Tamanho de fonte, espaçamento, botão/ícone clicável, largura de leitura → `references/tipografia-e-espaco.md`.
    - Escolher entre breadcrumb, tabs, toast, alerta inline, dialog, tooltip, badge etc. → `references/componentes-por-area.md`.
    - Formulário, foco, teclado, animação, imagem, texto de interface → `references/acessibilidade-e-inclusao.md`.

@@ -9,5 +9,5 @@ interface FormErrorMessageProps {
 export function FormErrorMessage({ error }: FormErrorMessageProps) {
   if (!error?.message) return null;
 
-  return <p className="text-sm text-red-500">{error.message}</p>;
+  return <p className="text-sm text-destructive-text">{error.message}</p>;
 }

@@ -78,7 +78,7 @@ function ActionMenuItemContent({
         <span
           className={
             variant === "destructive"
-              ? "font-medium text-destructive"
+              ? "font-medium text-destructive-text"
               : "font-medium text-foreground"
           }
         >

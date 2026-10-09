@@ -22,7 +22,7 @@ export function DataBaseErrorSection({
       )}
     >
       <div className="max-w-md text-center">
-        <div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive-text">
           <AlertTriangle className="size-5" aria-hidden />
         </div>
 
