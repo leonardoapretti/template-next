@@ -229,6 +229,7 @@ class UserService extends BaseService<typeof db.user> {
         destinatario: usuario.email,
         assunto: "Confirme seu e-mail",
         usarEmailUsuarioComoReplyTo: false,
+        emailDeConta: true,
         texto: [
           `Olá, ${usuario.nome}.`,
           "",
@@ -407,6 +408,7 @@ class UserService extends BaseService<typeof db.user> {
         destinatario: usuario.email,
         assunto: "Altere sua senha",
         usarEmailUsuarioComoReplyTo: false,
+        emailDeConta: true,
         texto: [
           `Olá, ${usuario.nome}.`,
           "",
@@ -614,6 +616,7 @@ class UserService extends BaseService<typeof db.user> {
         destinatario: normalizarEmail(novoEmail),
         assunto: "Confirme seu novo e-mail",
         usarEmailUsuarioComoReplyTo: false,
+        emailDeConta: true,
         texto: [
           `Olá, ${usuario.nome}.`,
           "",

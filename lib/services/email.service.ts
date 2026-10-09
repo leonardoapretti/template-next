@@ -11,6 +11,9 @@ export type EnviarEmailParams = {
   html?: string;
   replyTo?: string;
   usarEmailUsuarioComoReplyTo?: boolean;
+  // E-mails transacionais da conta do usuário (confirmação, senha, troca de e-mail)
+  // passam pela trava de segurança.
+  emailDeConta?: boolean;
 };
 
 type EmailInfoItem = {
@@ -139,8 +142,9 @@ export function criarEmailHtml({
   `;
 }
 
-// Trava de segurança: a infra de e-mail (Resend) fica pronta, mas nenhum envio
-// sai da aplicação. Para liberar, altere esta constante conscientemente.
+// Trava de segurança: a infra de e-mail (Resend) fica pronta, mas só e-mails de
+// conta (`emailDeConta`) saem da aplicação. Para liberar todos, altere esta
+// constante conscientemente.
 const ENVIO_DE_EMAIL_HABILITADO = false;
 
 function resolverDestinatario(destinatario?: string) {
@@ -180,7 +184,7 @@ class EmailService {
   }
 
   async enviarEmail(params: EnviarEmailParams) {
-    if (!ENVIO_DE_EMAIL_HABILITADO) {
+    if (!ENVIO_DE_EMAIL_HABILITADO && !params.emailDeConta) {
       return DataBaseResponse.error({
         code: "EMAIL_DISABLED",
         message: "O envio de e-mails está desabilitado nesta aplicação.",

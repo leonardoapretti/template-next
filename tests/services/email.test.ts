@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 
 describe("emailService.enviarEmail", () => {
-  it("bloqueia qualquer envio e nunca chama o provedor", async () => {
+  it("bloqueia envios que não são de conta e nunca chama o provedor", async () => {
     const { emailService } = await import("@/lib/services/email.service");
 
     const response = await emailService.enviarEmail({
@@ -30,5 +30,21 @@ describe("emailService.enviarEmail", () => {
     expect(response.isError()).toBe(true);
     expect(response.getErrorCode()).toBe("EMAIL_DISABLED");
     expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("libera e-mails de conta", async () => {
+    sendMock.mockResolvedValue({ data: { id: "1" }, error: null });
+    const { emailService } = await import("@/lib/services/email.service");
+
+    const response = await emailService.enviarEmail({
+      destinatario: "usuario@exemplo.com",
+      assunto: "Teste",
+      texto: "Olá",
+      emailDeConta: true,
+      usarEmailUsuarioComoReplyTo: false,
+    });
+
+    expect(response.isError()).toBe(false);
+    expect(sendMock).toHaveBeenCalledTimes(1);
   });
 });
