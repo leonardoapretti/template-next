@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { routes } from "@/lib/utils/routes";
 
 export function JaLogadoToast() {
   const searchParams = useSearchParams();
@@ -21,7 +22,7 @@ export function JaLogadoToast() {
       description: "Saia para criar uma nova conta.",
     });
 
-    router.replace("/dashboard");
+    router.replace(routes.dashboard.home);
   }, [jaLogado, router]);
 
   return null;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { planoService } from "@/lib/services/plano.service";
+import { routes } from "@/lib/utils/routes";
 import { MatrizPlanoForm } from "./_components/matriz-plano-form";
 import { NovoPlanoForm } from "./_components/novo-plano-form";
 
@@ -40,7 +41,11 @@ export default async function PlanosAdminPage({
         <PageSection title="Permissões do plano">
           <div className="flex flex-wrap gap-2">
             {planos.map((plano) => (
-              <Link className="no-underline" href={`/admin/planos?planoId=${plano.id}`} key={plano.id}>
+              <Link
+                className="no-underline"
+                href={routes.admin.planoSelecionado(plano.id)}
+                key={plano.id}
+              >
                 <Badge variant={plano.id === planoSelecionado?.id ? "default" : "outline"}>
                   {plano.nome}
                 </Badge>

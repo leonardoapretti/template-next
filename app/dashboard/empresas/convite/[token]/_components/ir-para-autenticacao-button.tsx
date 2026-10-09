@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { apiBrowserClient } from "@/lib/api-adapter/src/browser";
+import { routes } from "@/lib/utils/routes";
 
 type IrParaAutenticacaoButtonProps = {
   destino: string;
@@ -25,7 +27,7 @@ export function IrParaAutenticacaoButton({
   function continuar() {
     startTransition(async () => {
       if (precisaSairPrimeiro) {
-        await fetch("/api/logout", { method: "POST" });
+        await apiBrowserClient.post(routes.api.logout);
       }
 
       router.push(destino);

@@ -2,6 +2,7 @@
 
 import { CalendarDaysIcon, LayoutDashboardIcon, MenuIcon, ShieldIcon } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
+import { routes } from "@/lib/utils/routes";
 import type { AppSidebarProps } from "../interfaces";
 import { NavMain } from "../nav-main";
 import { SidebarBottomNav } from "../sidebar-bottom-nav";
@@ -11,25 +12,25 @@ import NavbarHeader from "../sidebar-header";
 const navMain = [
   {
     title: "Agenda",
-    url: "/agenda",
+    url: routes.agenda.home,
     icon: <CalendarDaysIcon />,
     isActive: true,
     items: [
       {
         title: "Eventos da empresa",
-        url: "/agenda",
+        url: routes.agenda.home,
       },
     ],
   },
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: routes.dashboard.home,
     icon: <LayoutDashboardIcon />,
     isActive: false,
     items: [
       {
         title: "Início",
-        url: "/dashboard",
+        url: routes.dashboard.home,
       },
     ],
   },
@@ -38,23 +39,29 @@ const navMain = [
 const navMainAdmin = [
   {
     title: "Área admin",
-    url: "/admin",
+    url: routes.admin.home,
     icon: <ShieldIcon />,
     isActive: false,
     items: [
       {
         title: "Início",
-        url: "/admin",
+        url: routes.admin.home,
       },
     ],
   },
 ];
 
-export function AgendaSidebar({ user, isAdmin, empresaInfo, empresasDisponiveis, ...props }: AppSidebarProps) {
+export function AgendaSidebar({
+  user,
+  isAdmin,
+  empresaInfo,
+  empresasDisponiveis,
+  ...props
+}: AppSidebarProps) {
   const bottomNavItems: React.ComponentProps<typeof SidebarBottomNav>["items"] = [
-    { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
-    { title: "Agenda", url: "/agenda", icon: <CalendarDaysIcon />, highlight: true },
-    ...(isAdmin ? [{ title: "Admin", url: "/admin", icon: <ShieldIcon /> }] : []),
+    { title: "Dashboard", url: routes.dashboard.home, icon: <LayoutDashboardIcon /> },
+    { title: "Agenda", url: routes.agenda.home, icon: <CalendarDaysIcon />, highlight: true },
+    ...(isAdmin ? [{ title: "Admin", url: routes.admin.home, icon: <ShieldIcon /> }] : []),
     { title: "Menu", menuTrigger: true, icon: <MenuIcon /> },
   ];
 
@@ -72,7 +79,7 @@ export function AgendaSidebar({ user, isAdmin, empresaInfo, empresasDisponiveis,
           <NavMain items={isAdmin ? [...navMain, ...navMainAdmin] : navMain} label="Navegação" />
         </SidebarContent>
 
-        <AppSidebarFooter user={user} profileHref="/dashboard" />
+        <AppSidebarFooter user={user} profileHref={routes.dashboard.home} />
 
         <SidebarRail />
       </Sidebar>

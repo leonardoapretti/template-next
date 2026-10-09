@@ -2,11 +2,12 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { routes } from "@/lib/utils/routes";
 
 const publicExactRoutes = [
   "/",
-  "/cadastro",
-  "/fale-conosco",
+  routes.auth.cadastro,
+  routes.public.faleConosco,
   "/manifest.webmanifest",
   "/sw.js",
   "/~offline",
@@ -41,14 +42,15 @@ export default auth((req) => {
   requestHeaders.set("x-pathname", pathname);
 
   const isPublicExactRoute = publicExactRoutes.includes(pathname);
-  const isLoginRoute = pathname === "/login" || pathname.startsWith("/login/");
+  const isLoginRoute =
+    pathname === routes.auth.login || pathname.startsWith(`${routes.auth.login}/`);
   const isDocsRoute = pathname === "/docs" || pathname.startsWith("/docs/");
 
   const isPublicRoute =
     isPublicExactRoute || isLoginRoute || isDocsRoute || isPublicAsset(pathname);
 
   if (!isAuthenticated && !isPublicRoute) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL(routes.auth.login, req.url));
   }
 
   return NextResponse.next({

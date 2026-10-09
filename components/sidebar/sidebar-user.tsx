@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { routes } from "@/lib/utils/routes";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -35,8 +36,8 @@ function getInitials(name: string) {
 
 export function SidebarUser({
   user,
-  profileHref = "/admin",
-  contaHref = "/dashboard/conta",
+  profileHref = routes.admin.home,
+  contaHref = routes.dashboard.conta,
 }: {
   user: {
     name: string;

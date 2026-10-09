@@ -6,6 +6,7 @@ import { assertCurrentUserCan } from "@/lib/access-control";
 import { EmpresaRequiredError } from "@/lib/access-control/errors";
 import { agendamentoService } from "@/lib/services/agendamento.service";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
+import { routes } from "@/lib/utils/routes";
 import { getEventosNaJanela } from "./agendamento.queries";
 import { expandirEventosNaJanela } from "./expandir-recorrencias";
 
@@ -63,8 +64,8 @@ const excluirEventoSchema = z.object({
 });
 
 function revalidarAgenda() {
-  revalidatePath("/dashboard");
-  revalidatePath("/agenda");
+  revalidatePath(routes.dashboard.home);
+  revalidatePath(routes.agenda.home);
 }
 
 // ─────────────────────────────────────────────────────────────

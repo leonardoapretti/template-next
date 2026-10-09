@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { canUseFeature, getAccessContext } from "@/lib/access-control";
 import type { AccessContext } from "@/lib/access-control/context";
 import { resourceRegistry } from "@/lib/access-control/permission-registry";
+import { routes } from "@/lib/utils/routes";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -102,7 +103,7 @@ function TabelaPermissoes({ ctx }: { ctx: AccessContext }) {
 }
 
 export default async function ExemplosPermissoesPage() {
-  const ctx = await getAccessContext().catch(() => redirect("/login"));
+  const ctx = await getAccessContext().catch(() => redirect(routes.auth.login));
 
   const podeAgendar = await podeCriarEvento();
 
@@ -158,7 +159,10 @@ export default async function ExemplosPermissoesPage() {
           <li>
             Atribua a um perfil da empresa em{" "}
             {ctx.membroEmpresa ? (
-              <Link className="text-primary underline underline-offset-2" href="/dashboard/empresa/papeis">
+              <Link
+                className="text-primary underline underline-offset-2"
+                href={routes.empresa.papeis}
+              >
                 /dashboard/empresa/papeis
               </Link>
             ) : (
@@ -167,10 +171,13 @@ export default async function ExemplosPermissoesPage() {
             (exige vínculo ativo com uma empresa).
           </li>
           <li>
-            Confirme que o plano da empresa também libera a chave — o teto de plano é
-            independente do perfil —{" "}
+            Confirme que o plano da empresa também libera a chave — o teto de plano é independente
+            do perfil —{" "}
             {ctx.isAdmin ? (
-              <Link className="text-primary underline underline-offset-2" href="/admin/planos">
+              <Link
+                className="text-primary underline underline-offset-2"
+                href={routes.admin.planos}
+              >
                 /admin/planos
               </Link>
             ) : (
@@ -184,14 +191,19 @@ export default async function ExemplosPermissoesPage() {
               await assertCurrentUserCan("recurso:acao")
             </code>{" "}
             e, se fizer sentido, esconda a UI correspondente checando{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">canUseFeature(ctx, "recurso:acao")</code>{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              canUseFeature(ctx, "recurso:acao")
+            </code>{" "}
             num Server Component.
           </li>
         </ol>
 
         <p className="mt-4 text-sm text-muted-foreground">
           Documentação completa:{" "}
-          <Link className="text-primary underline underline-offset-2" href="/docs/controle-de-acesso">
+          <Link
+            className="text-primary underline underline-offset-2"
+            href="/docs/controle-de-acesso"
+          >
             /docs/controle-de-acesso
           </Link>{" "}
           e{" "}

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shell";
 import { canUseFeature, getAccessContext } from "@/lib/access-control";
 import { empresaService } from "@/lib/services/empresa.service";
+import { routes } from "@/lib/utils/routes";
 import { ConfiguracaoForm } from "./_components/configuracao-form";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -16,12 +17,12 @@ export const metadata: Metadata = {
 };
 
 export default async function EmpresaPage() {
-  const ctx = await getAccessContext().catch(() => redirect("/login"));
+  const ctx = await getAccessContext().catch(() => redirect(routes.auth.login));
 
   if (!ctx.membroEmpresa) {
     // Admin da plataforma sem vínculo com nenhuma empresa: nada específico
     // para mostrar aqui ainda (área global fica em /admin).
-    redirect("/dashboard");
+    redirect(routes.dashboard.home);
   }
 
   const response = await empresaService.buscarPorId(ctx.membroEmpresa.empresaId);
@@ -43,14 +44,23 @@ export default async function EmpresaPage() {
         </PageSection>
       )}
 
-      <PageSection description="Membros vinculados a esta empresa e convites pendentes." title="Membros">
-        <Link className="text-sm text-primary underline underline-offset-2" href="/dashboard/empresa/membros">
+      <PageSection
+        description="Membros vinculados a esta empresa e convites pendentes."
+        title="Membros"
+      >
+        <Link
+          className="text-sm text-primary underline underline-offset-2"
+          href={routes.empresa.membros}
+        >
           Gerenciar membros →
         </Link>
       </PageSection>
 
       <PageSection description="Perfis de acesso e a permissão granular de cada um." title="Perfis">
-        <Link className="text-sm text-primary underline underline-offset-2" href="/dashboard/empresa/papeis">
+        <Link
+          className="text-sm text-primary underline underline-offset-2"
+          href={routes.empresa.papeis}
+        >
           Gerenciar perfis →
         </Link>
       </PageSection>

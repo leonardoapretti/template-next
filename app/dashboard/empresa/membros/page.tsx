@@ -5,6 +5,7 @@ import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shel
 import { canUseFeature, getAccessContext } from "@/lib/access-control";
 import { empresaService } from "@/lib/services/empresa.service";
 import { roleService } from "@/lib/services/role.service";
+import { routes } from "@/lib/utils/routes";
 import { ConvidarMembroForm } from "./_components/convidar-membro-form";
 import { type MembroRow, MembrosTable } from "./_components/membros-table";
 
@@ -17,10 +18,10 @@ export const metadata: Metadata = {
 };
 
 export default async function MembrosEmpresaPage() {
-  const ctx = await getAccessContext().catch(() => redirect("/login"));
+  const ctx = await getAccessContext().catch(() => redirect(routes.auth.login));
 
   if (!ctx.membroEmpresa) {
-    redirect("/dashboard");
+    redirect(routes.dashboard.home);
   }
 
   const [membrosResponse, convitesResponse, rolesResponse] = await Promise.all([

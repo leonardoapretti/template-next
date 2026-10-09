@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { PermissionMatrixField } from "@/components/permission-matrix-field";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,10 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/dialog-drawer";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { routes } from "@/lib/utils/routes";
 import { atualizarPermissoesPapelAction, removerPapelAction, renomearPapelAction } from "./actions";
 
 type PermissoesPapelFormProps = {
@@ -27,7 +28,11 @@ type PermissoesPapelFormProps = {
   valoresIniciais: Record<string, boolean>;
 };
 
-export function PermissoesPapelForm({ papel, podeGerenciar, valoresIniciais }: PermissoesPapelFormProps) {
+export function PermissoesPapelForm({
+  papel,
+  podeGerenciar,
+  valoresIniciais,
+}: PermissoesPapelFormProps) {
   const router = useRouter();
   const [nome, setNome] = useState(papel.nome);
   const [valores, setValores] = useState<Record<string, boolean>>(valoresIniciais);
@@ -68,7 +73,7 @@ export function PermissoesPapelForm({ papel, podeGerenciar, valoresIniciais }: P
       }
 
       toast.success("Perfil excluído.");
-      router.push("/dashboard/empresa/papeis");
+      router.push(routes.empresa.papeis);
       router.refresh();
     });
   }

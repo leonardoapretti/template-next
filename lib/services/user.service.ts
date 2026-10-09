@@ -2,6 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import type { Prisma } from "@/generated/prisma/client";
+import { routes } from "@/lib/utils/routes";
 import { getAppBaseUrl } from "@/lib/utils/routes/auth-links";
 import { db } from "../db";
 import { actionTokenService } from "./actiontoken.service";
@@ -222,7 +223,7 @@ class UserService extends BaseService<typeof db.user> {
 
       const { token, expiresAt } = tokenResponse.data;
 
-      const link = new URL(`/login/verificar-email/${token}`, getAppBaseUrl()).toString();
+      const link = new URL(routes.auth.verificarEmailToken(token), getAppBaseUrl()).toString();
 
       const emailResponse = await emailService.enviarEmail({
         destinatario: usuario.email,
@@ -400,7 +401,7 @@ class UserService extends BaseService<typeof db.user> {
 
       const { token, expiresAt } = tokenResponse.data;
 
-      const link = new URL(`/login/redefinir-senha/${token}`, getAppBaseUrl()).toString();
+      const link = new URL(routes.auth.redefinirSenhaToken(token), getAppBaseUrl()).toString();
 
       const emailResponse = await emailService.enviarEmail({
         destinatario: usuario.email,
@@ -607,7 +608,7 @@ class UserService extends BaseService<typeof db.user> {
 
       const { token, expiresAt } = tokenResponse.data;
 
-      const link = new URL(`/dashboard/conta/confirmar-email/${token}`, getAppBaseUrl()).toString();
+      const link = new URL(routes.dashboard.confirmarEmailToken(token), getAppBaseUrl()).toString();
 
       const emailResponse = await emailService.enviarEmail({
         destinatario: normalizarEmail(novoEmail),

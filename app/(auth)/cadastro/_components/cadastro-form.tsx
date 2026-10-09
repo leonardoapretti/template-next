@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { routes } from "@/lib/utils/routes";
 import { cadastrarAction } from "./actions";
-import { cadastroSchema, type CadastroFormSchema } from "./schema";
+import { type CadastroFormSchema, cadastroSchema } from "./schema";
 
 export function CadastroForm({
   conviteToken,
@@ -46,12 +47,12 @@ export function CadastroForm({
       </div>
 
       <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <Campo label="Nome completo" error={form.formState.errors.nome?.message} icon={<UserRound />}>
-          <Input
-            autoComplete="name"
-            placeholder="Seu nome"
-            {...form.register("nome")}
-          />
+        <Campo
+          label="Nome completo"
+          error={form.formState.errors.nome?.message}
+          icon={<UserRound />}
+        >
+          <Input autoComplete="name" placeholder="Seu nome" {...form.register("nome")} />
         </Campo>
 
         <Campo label="E-mail" error={form.formState.errors.email?.message} icon={<Mail />}>
@@ -90,7 +91,11 @@ export function CadastroForm({
         Já possui conta?{" "}
         <Link
           className="text-primary hover:underline"
-          href={retorno ? `/login?retorno=${encodeURIComponent(retorno)}` : "/login"}
+          href={
+            retorno
+              ? `${routes.auth.login}?retorno=${encodeURIComponent(retorno)}`
+              : routes.auth.login
+          }
         >
           Entrar
         </Link>

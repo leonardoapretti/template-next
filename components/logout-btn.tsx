@@ -3,6 +3,8 @@
 import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { apiBrowserClient } from "@/lib/api-adapter/src/browser";
+import { routes } from "@/lib/utils/routes";
 import { Button } from "./ui/button";
 
 export default function LogOutBtn() {
@@ -11,8 +13,8 @@ export default function LogOutBtn() {
 
   function logout() {
     startTransition(async () => {
-      await fetch("/api/logout", { method: "POST" });
-      router.replace("/login");
+      await apiBrowserClient.post(routes.api.logout);
+      router.replace(routes.auth.login);
       router.refresh();
     });
   }

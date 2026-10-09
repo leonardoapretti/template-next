@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { userService } from "@/lib/services/user.service";
+import { routes } from "@/lib/utils/routes";
 import VerificarEmailForm from "./_components/verificar-email-form";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -98,7 +99,7 @@ export default async function VerificarEmailPage({ searchParams }: VerificarEmai
               <Button
                 variant="link"
                 className="h-auto p-0"
-                render={<Link href="/login">Voltar para o login</Link>}
+                render={<Link href={routes.auth.login}>Voltar para o login</Link>}
                 nativeButton={false}
               ></Button>
             </div>

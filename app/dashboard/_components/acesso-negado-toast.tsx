@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { routes } from "@/lib/utils/routes";
 
 export const ACESSO_NEGADO_STORAGE_KEY = "acesso-negado-admin";
 
@@ -24,7 +25,7 @@ export function AcessoNegadoToast() {
     });
 
     sessionStorage.setItem(ACESSO_NEGADO_STORAGE_KEY, "1");
-    router.replace("/dashboard");
+    router.replace(routes.dashboard.home);
   }, [acessoNegado, router]);
 
   return null;

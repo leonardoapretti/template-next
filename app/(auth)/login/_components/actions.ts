@@ -1,12 +1,12 @@
 "use server";
 
-import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import logger from "@/lib/logger/src";
 import { userService } from "@/lib/services/user.service";
+import { routes } from "@/lib/utils/routes";
 import { getPerfilInicialPath } from "@/lib/utils/routes/perfil-routes";
-
 import { loginSchema } from "./schema";
 
 export type LoginActionState = {
@@ -70,7 +70,7 @@ export async function loginAction(input: unknown): Promise<LoginActionState> {
       const message = getLoginErrorMessage(code);
 
       if (code === "EMAIL_NAO_VERIFICADO") {
-        redirect("/login/verificar-email");
+        redirect(routes.auth.verificarEmail);
       }
 
       return { success: false, errorMessage: message };

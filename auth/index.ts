@@ -1,12 +1,13 @@
+import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { auditLogService } from "@/lib/services/audit-log.service";
 import { userService } from "@/lib/services/user.service";
 import { verificarRateLimit } from "@/lib/utils/rate-limit";
 import { getDadosAuditoriaAssinatura } from "@/lib/utils/request";
-import bcrypt from "bcryptjs";
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { headers } from "next/headers";
+import { routes } from "@/lib/utils/routes";
 import { EmailNaoVerificadoError, RateLimitExcedidoError } from "./auth-errors";
 
 const SESSION_MAX_AGE_SECONDS = 7200; // 2 horas
@@ -113,7 +114,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
 
   pages: {
-    signIn: "/login",
+    signIn: routes.auth.login,
   },
 
   session: {

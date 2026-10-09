@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { userService } from "@/lib/services/user.service";
+import { routes } from "@/lib/utils/routes";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -54,14 +55,14 @@ export default async function ConfirmarEmailPage({ params }: ConfirmarEmailPageP
             <div className="flex flex-col gap-2">
               <Button
                 className="w-full"
-                render={<Link href="/login/verificar-email">Solicitar novo link</Link>}
+                render={<Link href={routes.auth.verificarEmail}>Solicitar novo link</Link>}
                 nativeButton={false}
               />
 
               <Button
                 variant="outline"
                 className="w-full"
-                render={<Link href="/login">Voltar para o login</Link>}
+                render={<Link href={routes.auth.login}>Voltar para o login</Link>}
                 nativeButton={false}
               />
             </div>
@@ -89,7 +90,7 @@ export default async function ConfirmarEmailPage({ params }: ConfirmarEmailPageP
 
           <Button
             className="w-full"
-            render={<Link href="/login">Ir para o login</Link>}
+            render={<Link href={routes.auth.login}>Ir para o login</Link>}
             nativeButton={false}
           ></Button>
         </CardContent>

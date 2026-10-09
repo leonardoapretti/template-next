@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { canUseFeature, getAccessContext } from "@/lib/access-control";
 import { NOME_ROLE_PROPRIETARIO } from "@/lib/access-control/policy";
 import { roleService } from "@/lib/services/role.service";
+import { routes } from "@/lib/utils/routes";
 import { NovoPapelForm } from "./_components/novo-papel-form";
 import { PermissoesPapelForm } from "./_components/permissoes-papel-form";
 
@@ -23,10 +24,10 @@ export default async function PapeisEmpresaPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const ctx = await getAccessContext().catch(() => redirect("/login"));
+  const ctx = await getAccessContext().catch(() => redirect(routes.auth.login));
 
   if (!ctx.membroEmpresa) {
-    redirect("/dashboard");
+    redirect(routes.dashboard.home);
   }
 
   const params = await searchParams;
@@ -44,7 +45,9 @@ export default async function PapeisEmpresaPage({
       <PageHeader
         action={
           podeGerenciar && (
-            <NovoPapelForm papeisExistentes={papeis.map((papel) => ({ id: papel.id, nome: papel.nome }))} />
+            <NovoPapelForm
+              papeisExistentes={papeis.map((papel) => ({ id: papel.id, nome: papel.nome }))}
+            />
           )
         }
         description="Perfis de acesso da empresa — crie perfis customizados ou ajuste as permissões dos perfis existentes."
@@ -56,7 +59,11 @@ export default async function PapeisEmpresaPage({
         <PageSection title="Permissões do perfil">
           <div className="flex flex-wrap gap-2">
             {papeis.map((papel) => (
-              <Link className="no-underline" href={`/dashboard/empresa/papeis?papelId=${papel.id}`} key={papel.id}>
+              <Link
+                className="no-underline"
+                href={routes.empresa.papelSelecionado(papel.id)}
+                key={papel.id}
+              >
                 <Badge variant={papel.id === papelSelecionado?.id ? "default" : "outline"}>
                   {papel.nome}
                   {papel.padraoSistema && " · padrão"}
@@ -79,7 +86,8 @@ export default async function PapeisEmpresaPage({
                   id: papelSelecionado.id,
                   nome: papelSelecionado.nome,
                   padraoSistema: papelSelecionado.padraoSistema,
-                  podeExcluir: !papelSelecionado.padraoSistema && papelSelecionado._count.membros === 0,
+                  podeExcluir:
+                    !papelSelecionado.padraoSistema && papelSelecionado._count.membros === 0,
                 }}
                 podeGerenciar={podeGerenciar}
                 valoresIniciais={Object.fromEntries(

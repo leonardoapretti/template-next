@@ -2,7 +2,7 @@ import { ApiError } from "./api-error-response";
 import { ApiResponse } from "./api-response";
 import { ApiSuccess } from "./api-success-response";
 import type { ResponseMetadata } from "./response-metadata";
-import type { ApiErrorBody, HttpRequestConfig } from "./types";
+import type { ApiErrorBody, HttpRequestConfig, ParseErrorBody } from "./types";
 
 /**
  * Concatena query params de forma segura.
@@ -190,10 +190,13 @@ export const prepareRequest = (
     };
   }
 
-  return {
-    headers,
-    body: requestConfig.data ? JSON.stringify(requestConfig.data) : undefined,
-  };
+  // Sem corpo (GET, POST vazio) não há Content-Type: um cabeçalho a mais transforma
+  // uma requisição simples do navegador em outra com preflight de CORS.
+  if (!requestConfig.data) {
+    return { headers: removeContentType(headers), body: undefined };
+  }
+
+  return { headers, body: JSON.stringify(requestConfig.data) };
 };
 
 /**
@@ -203,8 +206,21 @@ export const prepareRequest = (
 export const handleErrorResponse = async <T>(
   response: Response,
   responseMetadata: ResponseMetadata,
+  parseErrorBody?: ParseErrorBody,
 ): Promise<ApiResponse<T>> => {
   const body = await parseJsonSafe(response);
+
+  // A API tem formato próprio de erro: quem configurou o client sabe lê-lo.
+  const mensagemDaApi = parseErrorBody?.(response.status, body);
+
+  if (mensagemDaApi) {
+    return new ApiResponse(
+      false,
+      response.status,
+      new ApiError([mensagemDaApi], "about:blank", "Error", response.status, mensagemDaApi),
+      responseMetadata,
+    );
+  }
 
   // Garante que é um objeto plano (não rawText, não null)
   const isRfc7807 = body && !("rawText" in body) && ("title" in body || "messages" in body);
@@ -255,8 +271,12 @@ export const handleSuccessResponse = async <T>(
   }
 
   const contentType = response.headers.get("content-type");
+  const text = await response.text();
+
   if (contentType?.includes("application/json")) {
-    const jsonData = await response.json();
+    // Resposta JSON sem corpo (ex.: 204, DELETE) é válida: dado vazio, não erro.
+    const jsonData = text ? JSON.parse(text) : undefined;
+
     return new ApiResponse(
       true,
       response.status,
@@ -265,7 +285,6 @@ export const handleSuccessResponse = async <T>(
     );
   }
 
-  const text = await response.text();
   return new ApiResponse(
     true,
     response.status,

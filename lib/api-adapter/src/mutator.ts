@@ -25,12 +25,15 @@ export const requestMutator = async <T>(
   }
 
   const { headers, body } = prepareRequest(requestConfig, init, token, isPublic);
+  // Os cabeçalhos já vêm mesclados (padrão do client + init + Authorization):
+  // `init` vai primeiro para não sobrescrevê-los. O signal do init (abortar a
+  // busca a cada digitação) vale quando a config não traz um.
   const fetchOptions: RequestInit = {
+    ...init,
     method,
     headers,
     body,
-    signal: requestConfig.signal,
-    ...init,
+    signal: requestConfig.signal ?? init?.signal,
   };
 
   let response: Response;
@@ -56,6 +59,14 @@ export const requestMutator = async <T>(
   const traceId = response.headers.get("x-trace-id");
 
   if (!response.ok) {
+    const resultado = await handleErrorResponse<T>(
+      response,
+      responseMetadata,
+      mutatorOptions?.parseErrorBody,
+    );
+
+    // O motivo que a API deu (já lido do corpo) vai no log: sem ele, "Erro http 500"
+    // não diz o que a API respondeu.
     logger?.error(
       {
         method,
@@ -63,11 +74,15 @@ export const requestMutator = async <T>(
         status: response.status,
         durationMs,
         traceId,
+        motivo: resultado.isError()
+          ? resultado.response.detail || resultado.response.messages
+          : null,
         responseMetadata,
       },
       "Erro http",
     );
-    return handleErrorResponse<T>(response, responseMetadata);
+
+    return resultado;
   }
 
   logger?.info(

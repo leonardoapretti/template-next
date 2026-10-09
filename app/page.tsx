@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { UserNavIndicator } from "@/components/user-nav-indicator";
+import { routes } from "@/lib/utils/routes";
 
 export const metadata: Metadata = {
   title: "Template Next.js",
@@ -76,7 +77,7 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button nativeButton={false} render={<Link href="/cadastro" />} size="lg">
+            <Button nativeButton={false} render={<Link href={routes.auth.cadastro} />} size="lg">
               Criar conta
               <ArrowRight className="size-4" />
             </Button>
@@ -111,7 +112,7 @@ export default function Home() {
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/cadastro"
+              href={routes.auth.cadastro}
             >
               <h3 className="font-semibold">Cadastro e login</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -120,7 +121,7 @@ export default function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/dashboard"
+              href={routes.dashboard.home}
             >
               <h3 className="font-semibold">Rota protegida (login)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -129,7 +130,7 @@ export default function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/admin"
+              href={routes.admin.home}
             >
               <h3 className="font-semibold">Rota protegida (RBAC)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -138,7 +139,7 @@ export default function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/fale-conosco"
+              href={routes.public.faleConosco}
             >
               <h3 className="font-semibold">Envio de e-mail (público)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -147,7 +148,7 @@ export default function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/dashboard/emails"
+              href={routes.dashboard.emails}
             >
               <h3 className="font-semibold">Envio de e-mail (admin)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -165,7 +166,7 @@ export default function Home() {
             </Link>
             <Link
               className="rounded-2xl border bg-card p-5 shadow-sm hover:bg-muted/40"
-              href="/dashboard/docs"
+              href={routes.dashboard.docs}
             >
               <h3 className="font-semibold">Documentação (protegida)</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -179,7 +180,7 @@ export default function Home() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>Template Next.js.</p>
-          <Link className="hover:text-foreground" href="/fale-conosco">
+          <Link className="hover:text-foreground" href={routes.public.faleConosco}>
             Fale conosco
           </Link>
         </div>
@@ -191,10 +192,15 @@ export default function Home() {
 function GuestNavActions() {
   return (
     <>
-      <Button nativeButton={false} render={<Link href="/login" />} size="sm" variant="ghost">
+      <Button
+        nativeButton={false}
+        render={<Link href={routes.auth.login} />}
+        size="sm"
+        variant="ghost"
+      >
         Entrar
       </Button>
-      <Button nativeButton={false} render={<Link href="/cadastro" />} size="sm">
+      <Button nativeButton={false} render={<Link href={routes.auth.cadastro} />} size="sm">
         Criar conta
       </Button>
     </>

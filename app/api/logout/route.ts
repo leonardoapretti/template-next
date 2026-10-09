@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { signOut } from "@/auth";
+import { routes } from "@/lib/utils/routes";
 
 const AUTH_COOKIES = [
   "authjs.session-token",
@@ -27,7 +28,7 @@ function limparCookiesAuth(response: NextResponse) {
 export async function GET(request: Request) {
   await signOut({ redirect: false });
 
-  const url = new URL("/login", request.url);
+  const url = new URL(routes.auth.login, request.url);
   url.searchParams.set("erro", "sessao-invalida");
 
   const response = NextResponse.redirect(url);

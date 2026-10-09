@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import LogOutBtn from "@/components/logout-btn";
 import {
   DropdownMenu,
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
+import { routes } from "@/lib/utils/routes";
 import { Button } from "./ui/button";
 
 function getInitials(name: string) {
@@ -48,7 +49,10 @@ export function UserNavIndicator({ name, email }: { name: string; email: string 
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <Button render={<Link href={"/dashboard"}>Acessar dashboard</Link>} variant={"secondary"} />
+        <Button
+          render={<Link href={routes.dashboard.home}>Acessar dashboard</Link>}
+          variant={"secondary"}
+        />
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<LogOutBtn />} />
       </DropdownMenuContent>

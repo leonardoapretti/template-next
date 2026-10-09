@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shell";
+import { routes } from "@/lib/utils/routes";
 import { AlterarEmailForm } from "./_components/alterar-email-form";
 import { AlterarSenhaCard } from "./_components/alterar-senha-card";
 
@@ -18,7 +19,7 @@ export default async function ContaPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect("/login");
+    redirect(routes.auth.login);
   }
 
   return (

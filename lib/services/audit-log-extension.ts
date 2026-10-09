@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { auditLogService } from "./audit-log.service";
+import { autorDaRequisicao } from "./audit-log-autor";
 import { auditTxContext } from "./audit-log-context";
 import { recifrarParaAuditoria } from "./crypto/encryption-extension";
 
@@ -13,6 +14,46 @@ export const AUDITADOS = new Set([
   "Plano",
   "PlanoPermissao",
 ]);
+
+// Segredos que nunca entram na auditoria, nem cifrados (o hash da senha não serve para auditar
+// e só aumentaria o que vaza num vazamento do banco): o snapshot registra apenas que mudaram,
+// em `segredosAlterados`.
+const CAMPOS_SECRETOS = ["senha"] as const;
+
+type Snapshot = Record<string, unknown>;
+
+function ehSnapshot(valor: unknown): valor is Snapshot {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+function semSegredos(snapshot: Snapshot): Snapshot {
+  const copia = { ...snapshot };
+
+  for (const campo of CAMPOS_SECRETOS) delete copia[campo];
+
+  return copia;
+}
+
+// Snapshots de antes/depois prontos para gravar: sem segredos e com a PII cifrada nos dois lados
+// (o resultado da query chega decifrado pela extensão de criptografia).
+export function snapshotsParaAuditoria(model: string, antes: unknown, depois: unknown) {
+  const segredosAlterados = CAMPOS_SECRETOS.filter(
+    (campo) =>
+      ehSnapshot(depois) &&
+      campo in depois &&
+      (!ehSnapshot(antes) || antes[campo] !== depois[campo]),
+  );
+
+  return {
+    dadosAntes: ehSnapshot(antes) ? recifrarParaAuditoria(model, semSegredos(antes)) : antes,
+    dadosDepois: ehSnapshot(depois)
+      ? recifrarParaAuditoria(model, {
+          ...semSegredos(depois),
+          ...(segredosAlterados.length > 0 ? { segredosAlterados } : {}),
+        })
+      : depois,
+  };
+}
 
 // Nome do delegate do Prisma Client para cada model (camelCase do nome do
 // model), usado para buscar o estado anterior em update/delete.
@@ -29,34 +70,14 @@ type MontarAuditLogParams = {
   query: QueryFn;
 };
 
-function extrairWhereId(args: unknown): string | null {
+function extrairWhere(args: unknown): Record<string, unknown> | null {
   if (typeof args !== "object" || args === null) {
     return null;
   }
 
-  const where = (args as { where?: { id?: unknown } }).where;
+  const where = (args as { where?: unknown }).where;
 
-  return typeof where?.id === "string" ? where.id : null;
-}
-
-async function resolverUsuarioAtual() {
-  try {
-    const { auth } = await import("@/auth");
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return null;
-    }
-
-    return {
-      usuarioId: session.user.id,
-      usuarioEmail: session.user.email ?? null,
-      usuarioNome: session.user.nome ?? null,
-    };
-  } catch {
-    // Fora de um request (ex: job/cron interno) auth() pode não resolver sessão.
-    return null;
-  }
+  return ehSnapshot(where) ? where : null;
 }
 
 function montarAcao(model: string, operation: MontarAuditLogParams["operation"]) {
@@ -76,16 +97,18 @@ async function buscarDadosAntes(
   client: Record<string, { findUnique: (args: unknown) => Promise<unknown> }>,
   model: string,
   operation: MontarAuditLogParams["operation"],
-  entidadeId: string | null,
+  where: Record<string, unknown> | null,
 ) {
-  if ((operation !== "update" && operation !== "delete") || !entidadeId) {
+  if (operation === "create" || !where) {
     return null;
   }
 
+  // Busca pelo mesmo `where` único da escrita (id, e-mail...): o upsert também tem estado
+  // anterior quando o registro já existia.
   try {
     const delegate = client[nomeDelegate(model)];
 
-    return (await delegate?.findUnique({ where: { id: entidadeId } })) ?? null;
+    return (await delegate?.findUnique({ where })) ?? null;
   } catch {
     // Se a busca do estado anterior falhar por qualquer motivo (ex: chave
     // composta, model sem findUnique padrão), segue sem dadosAntes em vez
@@ -95,9 +118,8 @@ async function buscarDadosAntes(
 }
 
 export async function montarAuditLog({ model, operation, args, query }: MontarAuditLogParams) {
-  const usuario = await resolverUsuarioAtual();
-
-  const entidadeId = extrairWhereId(args);
+  const where = extrairWhere(args);
+  const entidadeId = typeof where?.id === "string" ? where.id : null;
 
   const txAtual = auditTxContext.getStore();
 
@@ -110,10 +132,8 @@ export async function montarAuditLog({ model, operation, args, query }: MontarAu
     client as unknown as Record<string, { findUnique: (args: unknown) => Promise<unknown> }>,
     model,
     operation,
-    entidadeId,
+    where,
   );
-
-  const dadosAntes = recifrarParaAuditoria(model, dadosAntesDecifrados);
 
   const resultado = await query(args);
 
@@ -126,18 +146,22 @@ export async function montarAuditLog({ model, operation, args, query }: MontarAu
 
   // Para delete, o Prisma retorna o próprio registro removido — guardamos
   // como snapshot para preservar o dado mesmo após a exclusão.
-  const dadosDepois = resultado as Prisma.InputJsonValue;
+  const { dadosAntes, dadosDepois } = snapshotsParaAuditoria(
+    model,
+    dadosAntesDecifrados,
+    resultado,
+  );
+
+  const autor = await autorDaRequisicao();
 
   await auditLogService.registrar(
     {
-      usuarioId: usuario?.usuarioId ?? null,
-      usuarioEmail: usuario?.usuarioEmail ?? null,
-      usuarioNome: usuario?.usuarioNome ?? null,
+      ...autor,
       acao: montarAcao(model, operation),
       entidade: model,
       entidadeId: idFinal,
       dadosAntes: dadosAntes as Prisma.InputJsonValue | null,
-      dadosDepois,
+      dadosDepois: dadosDepois as Prisma.InputJsonValue | null,
     },
     client,
   );

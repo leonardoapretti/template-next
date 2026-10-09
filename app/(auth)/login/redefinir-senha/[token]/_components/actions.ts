@@ -3,6 +3,7 @@
 import { signOut } from "@/auth";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
 import { userService } from "@/lib/services/user.service";
+import { routes } from "@/lib/utils/routes";
 import { redefinirSenhaSchema } from "./schema";
 
 export async function redefinirSenhaAction(token: string, input: unknown) {
@@ -27,6 +28,6 @@ export async function redefinirSenhaAction(token: string, input: unknown) {
   await signOut({ redirect: false });
 
   return DataBaseResponse.success({ senhaAlterada: true }).serialize({
-    redirectTo: "/login",
+    redirectTo: routes.auth.login,
   });
 }

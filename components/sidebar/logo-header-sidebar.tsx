@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { routes } from "@/lib/utils/routes";
 import { selecionarEmpresaAtivaAction } from "./actions";
 import type { SidebarLayoutEmpresaInfo, SidebarLayoutEmpresaOpcao } from "./layout";
 
@@ -104,7 +105,9 @@ export function LogoEmpresa({
             </div>
 
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{empresaInfo ? empresaInfo.nome : "Template"}</span>
+              <span className="truncate font-medium">
+                {empresaInfo ? empresaInfo.nome : "Template"}
+              </span>
               <span className="truncate text-xs text-muted-foreground">
                 {getSubtitulo(isPending, perfilAtual, empresaInfo)}
               </span>
@@ -126,7 +129,9 @@ export function LogoEmpresa({
             {empresasDisponiveis.length > 1 && (
               <>
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">Empresas</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Empresas
+                  </DropdownMenuLabel>
 
                   {empresasDisponiveis.map((empresa) => (
                     <DropdownMenuItem
@@ -151,18 +156,21 @@ export function LogoEmpresa({
                 Alternar visualização
               </DropdownMenuLabel>
 
-              <DropdownMenuItem render={<Link href="/dashboard" />} className="gap-2 p-2">
+              <DropdownMenuItem
+                render={<Link href={routes.dashboard.home} />}
+                className="gap-2 p-2"
+              >
                 <User className="size-4" />
                 Usuário
               </DropdownMenuItem>
 
-              <DropdownMenuItem render={<Link href="/agenda" />} className="gap-2 p-2">
+              <DropdownMenuItem render={<Link href={routes.agenda.home} />} className="gap-2 p-2">
                 <CalendarDaysIcon className="size-4" />
                 Agenda
               </DropdownMenuItem>
 
               {isAdmin && (
-                <DropdownMenuItem render={<Link href="/admin" />} className="gap-2 p-2">
+                <DropdownMenuItem render={<Link href={routes.admin.home} />} className="gap-2 p-2">
                   <ShieldIcon className="size-4" />
                   Admin
                 </DropdownMenuItem>

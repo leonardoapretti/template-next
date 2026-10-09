@@ -12,10 +12,21 @@ export interface HttpRequestConfig {
   disableCache?: boolean; // Desabilita cache automático para GET/HEAD/OPTIONS
   responseType?: "json" | "text" | "blob";
 }
+/**
+ * Lê o corpo de uma resposta de erro fora do padrão RFC 7807 (cada API tem o seu)
+ * e devolve a mensagem para o usuário, ou null para cair no padrão do adapter.
+ * `corpo` é o JSON já lido ou `{ rawText }` quando a resposta não é JSON.
+ */
+export type ParseErrorBody = (status: number, corpo: unknown) => string | null;
+
 export interface ApiAdapterClientConfig {
   baseUrl?: string;
   getToken?: () => Promise<string | null>;
   logger?: ApiAdapterLogger; // opcional
+  /** Cabeçalhos enviados em toda requisição deste client (ex.: Accept, User-Agent). */
+  defaultHeaders?: Record<string, string>;
+  /** Como ler o erro das APIs que não seguem o RFC 7807. */
+  parseErrorBody?: ParseErrorBody;
 }
 export interface AdapterRequestInit extends RequestInit {
   /** Query string params: client.get('/users', { params: { page: 1 } }) */
@@ -37,6 +48,7 @@ export interface MutatorOptions {
    */
   getAuthToken?: () => Promise<string | null>;
   logger?: ApiAdapterLogger; // opcional
+  parseErrorBody?: ParseErrorBody;
 }
 
 /**

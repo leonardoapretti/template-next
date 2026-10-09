@@ -7,17 +7,29 @@ icon: ShieldAlert
 
 A trilha de auditoria (`AuditLog`) registra, de forma resistente a adulteração retroativa, quem fez o quê em operações críticas — login, cadastro e escrita nos models sensíveis.
 
-Toda a lógica está em `lib/services/audit-log.service.ts`, `lib/services/audit-log-extension.ts` e `lib/services/audit-log-context.ts`. O modelo de dados está em `prisma/schema.prisma` (model `AuditLog`).
+Toda a lógica está em `lib/services/audit-log.service.ts`, `lib/services/audit-log-extension.ts`, `lib/services/audit-log-autor.ts` e `lib/services/audit-log-context.ts`. O modelo de dados está em `prisma/schema.prisma` (model `AuditLog`).
 
 ## Cadeia de hash
 
-Cada registro carrega `hash` (SHA-256 de um payload canônico do evento) encadeado ao `hashAnterior` (o `hash` do registro anterior). Alterar qualquer campo de qualquer linha antiga quebra a cadeia a partir daquele ponto — detectável via `auditLogService.verificarCadeia(client)`.
+Cada registro carrega `hash` (SHA-256 de um payload canônico do evento) encadeado ao `hashAnterior` (o `hash` do registro anterior). Alterar qualquer campo de qualquer linha antiga quebra a cadeia a partir daquele ponto — detectável via `auditLogService.verificarCadeia(client)`, que lê as linhas cruas do banco (`$queryRaw`): pelo client com extensões a PII voltaria decifrada e o hash recalculado nunca bateria. O retorno traz `valida`, `quebradoEm`, `total` e `bifurcacoes`.
+
+### Gravação serializada
+
+`registrar` abre (ou reaproveita, quando recebe um `tx`) uma transação e pega `pg_advisory_xact_lock` antes de ler o último hash: sem a trava, duas gravações concorrentes liam o mesmo `hashAnterior` e a cadeia bifurcava. `createdAt` é estritamente crescente (nunca empata com o registro anterior). O hash cobre a representação JSON dos valores (`Date` e `Decimal` via `toJSON`), a mesma que o banco guarda.
+
+### Autor e origem
+
+`registrar` completa autor (`usuarioId`, e-mail, nome da sessão), `ip` e `userAgent` a partir da requisição (`audit-log-autor.ts`). Quem informa outro autor explicitamente (e-mail digitado num login que falhou) mantém o que informou. Fora de uma requisição (cron, script) o registro segue sem autor nem origem.
+
+### Segredos fora do snapshot
+
+O campo `senha` nunca entra no snapshot, nem cifrado: `snapshotsParaAuditoria` o remove e, se mudou, registra só `segredosAlterados: ["senha"]`.
 
 Não é tamper-*proof*, é tamper-*evident*: qualquer credencial com acesso de escrita ao banco consegue alterar `audit_logs` fisicamente. A cadeia de hash torna isso detectável, não impossível.
 
 ## Captura automática
 
-Uma Prisma Client Extension (`lib/db.ts`) intercepta toda escrita (`create`/`update`/`delete`/`upsert`) nos models listados em `AUDITADOS` (`lib/services/audit-log-extension.ts`) — hoje só `User` — e chama `auditLogService.registrar(...)` automaticamente, sem exigir alteração nos services.
+Uma Prisma Client Extension (`lib/db.ts`) intercepta toda escrita (`create`/`update`/`delete`/`upsert`) nos models listados em `AUDITADOS` (`lib/services/audit-log-extension.ts`) — hoje `User`, `Empresa`, `MembroEmpresa`, `Role`, `Plano` e `PlanoPermissao` — e chama `auditLogService.registrar(...)` automaticamente, sem exigir alteração nos services.
 
 Para auditar um novo model, adicione seu nome ao `Set` `AUDITADOS`.
 
@@ -29,6 +41,7 @@ Eventos que não correspondem a uma escrita de model são registrados via chamad
 | --- | --- |
 | `LOGIN_SUCCESS` / `LOGIN_FAILED` | `auth/index.ts` (`authorize()`) |
 | `CADASTRO_REALIZADO` | `app/(auth)/cadastro/_components/actions.ts` |
+| `CONVITE_MEMBRO_EMPRESA_ACEITO` | `lib/services/empresa.service.ts` |
 
 ## Atomicidade com transações
 

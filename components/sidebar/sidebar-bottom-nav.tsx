@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
+import { routes } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils/tailwind";
 
 type BottomNavItem = {
@@ -115,7 +116,7 @@ export function SidebarBottomNav({ items }: { items: BottomNavItem[] }) {
   // Fumadocs (DocsLayout) já tem sua própria navegação mobile completa
   // (sidebar, busca, toggle) — a barra fixa da nossa sidebar sobrepõe a
   // dele se renderizada junto, então some aqui dentro.
-  if (urlMatchesPathname(pathname, "/dashboard/docs")) {
+  if (urlMatchesPathname(pathname, routes.dashboard.docs)) {
     return null;
   }
 

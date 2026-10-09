@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { routes } from "@/lib/utils/routes";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -6,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Template Next.js",
     short_name: "Template Next.js",
     description: "Template Next.js com infraestrutura pronta para produção.",
-    start_url: "/login",
+    start_url: routes.auth.login,
     scope: "/",
     display: "standalone",
     orientation: "portrait",

@@ -8,6 +8,7 @@ import { FormErrorMessage } from "@/components/form-error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { routes } from "@/lib/utils/routes";
 import { criarEmpresaAction } from "./actions";
 import { type CriarEmpresaFormSchema, criarEmpresaSchema } from "./schema";
 
@@ -30,7 +31,7 @@ export function CriarEmpresaForm() {
     }
 
     toast.success("Empresa criada com sucesso.");
-    router.push("/dashboard/empresa");
+    router.push(routes.empresa.home);
   }
 
   return (

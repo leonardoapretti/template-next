@@ -8,8 +8,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { routes } from "@/lib/utils/routes";
 import { loginAction } from "./actions";
-import { loginSchema, type LoginSchema } from "./schema";
+import { type LoginSchema, loginSchema } from "./schema";
 
 export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; retorno?: string }) {
   const form = useForm<LoginSchema>({
@@ -98,7 +99,13 @@ export function LoginForm({ emailPadrao, retorno }: { emailPadrao?: string; reto
         nativeButton={false}
         variant="outline"
         render={
-          <Link href={retorno ? `/cadastro?retorno=${encodeURIComponent(retorno)}` : "/cadastro"}>
+          <Link
+            href={
+              retorno
+                ? `${routes.auth.cadastro}?retorno=${encodeURIComponent(retorno)}`
+                : routes.auth.cadastro
+            }
+          >
             Cadastre-se
           </Link>
         }

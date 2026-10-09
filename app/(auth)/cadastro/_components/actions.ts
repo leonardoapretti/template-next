@@ -9,7 +9,7 @@ import { auditLogService } from "@/lib/services/audit-log.service";
 import { userService } from "@/lib/services/user.service";
 import { verificarRateLimit } from "@/lib/utils/rate-limit";
 import { getDadosAuditoriaAssinatura } from "@/lib/utils/request";
-
+import { routes } from "@/lib/utils/routes";
 import { cadastroSchema } from "./schema";
 
 // Limite de cadastros por IP, para dificultar criação automatizada de contas.
@@ -105,7 +105,7 @@ export async function cadastrarAction(input: unknown): Promise<CadastroActionSta
       db,
     );
 
-    destino = `/login${retornoQuery}`;
+    destino = `${routes.auth.login}${retornoQuery}`;
   } else {
     const response = await userService.criarUsuarioComConfirmacaoEmail(dadosUsuario);
 
@@ -132,7 +132,7 @@ export async function cadastrarAction(input: unknown): Promise<CadastroActionSta
       db,
     );
 
-    destino = "/login/verificar-email";
+    destino = routes.auth.verificarEmail;
   }
 
   // Fora do bloco anterior: redirect() lança um erro especial que não pode

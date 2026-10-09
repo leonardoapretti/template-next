@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { NOME_ROLE_PROPRIETARIO, papeisPadraoDoSistema } from "@/lib/access-control/policy";
+import { routes } from "@/lib/utils/routes";
 import { getAppBaseUrl } from "@/lib/utils/routes/auth-links";
 import { db } from "../db";
 import { actionTokenService } from "./actiontoken.service";
@@ -7,8 +8,8 @@ import { auditLogService } from "./audit-log.service";
 import { auditTxContext } from "./audit-log-context";
 import {
   convitesTag,
-  empresaTag,
   empresasDoUsuarioTag,
+  empresaTag,
   membrosTag,
   userTag,
 } from "./config/cache-tags";
@@ -314,7 +315,7 @@ class EmpresaService {
       }
 
       const link = new URL(
-        `/dashboard/empresas/convite/${tokenResponse.data.token}`,
+        routes.dashboard.convite(tokenResponse.data.token),
         getAppBaseUrl(),
       ).toString();
 

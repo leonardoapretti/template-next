@@ -3,6 +3,7 @@ import SidebarLayout from "@/components/sidebar/layout";
 import { AgendaSidebar } from "@/components/sidebar/sidebar-agenda";
 import { AgendaProvider } from "@/components/sidebar/sidebar-agenda/agenda-context";
 import { getAccessContext, temEmpresaAtiva } from "@/lib/access-control";
+import { routes } from "@/lib/utils/routes";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -13,10 +14,10 @@ export default async function AgendaLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const ctx = await getAccessContext().catch(() => redirect("/login"));
+  const ctx = await getAccessContext().catch(() => redirect(routes.auth.login));
 
   if (!temEmpresaAtiva(ctx)) {
-    redirect("/dashboard?acessoNegado=empresa");
+    redirect(`${routes.dashboard.home}?acessoNegado=empresa`);
   }
 
   return (

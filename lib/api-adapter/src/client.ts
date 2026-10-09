@@ -13,6 +13,8 @@ import type {
  *   fetch(url, init)
  */
 
+const ESQUEMA_DE_URL = /^[a-z][a-z\d+.-]*:/i;
+
 export class ApiAdapterClient {
   private config: ApiAdapterClientConfig;
 
@@ -25,18 +27,27 @@ export class ApiAdapterClient {
   }
 
   request<T>(config: HttpRequestConfig, init?: AdapterRequestInit) {
-    const url = config.url.startsWith("http") ? config.url : `${this.config.baseUrl}${config.url}`;
+    // Qualquer esquema (http, blob: de arquivo local...) é uma URL absoluta.
+    const url = ESQUEMA_DE_URL.test(config.url)
+      ? config.url
+      : `${this.config.baseUrl ?? ""}${config.url}`;
 
     const { params, mutatorOptions, ...fetchInit } = init ?? {};
 
     const resolvedMutatorOptions: MutatorOptions = {
       getAuthToken: this.config.getToken,
       logger: this.config.logger,
+      parseErrorBody: this.config.parseErrorBody,
       ...mutatorOptions,
     };
 
     return requestMutator<T>(
-      { ...config, url, params: params ?? config.params },
+      {
+        ...config,
+        url,
+        params: params ?? config.params,
+        headers: { ...this.config.defaultHeaders, ...config.headers },
+      },
       fetchInit,
       resolvedMutatorOptions,
     );

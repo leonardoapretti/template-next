@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { userService } from "@/lib/services/user.service";
+import { routes } from "@/lib/utils/routes";
 import { RedefinirSenhaForm } from "./_components/redefinir-senha-form";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -44,7 +45,7 @@ export default async function RedefinirSenhaPage({ params }: RedefinirSenhaPageP
 
             <Button
               className="w-full"
-              render={<Link href="/login">Voltar para o login</Link>}
+              render={<Link href={routes.auth.login}>Voltar para o login</Link>}
               nativeButton={false}
             />
           </CardContent>

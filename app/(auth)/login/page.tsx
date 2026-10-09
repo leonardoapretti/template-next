@@ -2,6 +2,7 @@ import { Activity } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { routes } from "@/lib/utils/routes";
 import { LoginForm } from "./_components/login-form";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -20,7 +21,7 @@ export default async function LoginPage({
   const session = await auth();
 
   if (session?.user) {
-    redirect("/dashboard");
+    redirect(routes.dashboard.home);
   }
 
   const { callbackUrl, retorno, email } = await searchParams;

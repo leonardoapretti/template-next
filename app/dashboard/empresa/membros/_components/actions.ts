@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { assertCurrentUserCan } from "@/lib/access-control";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
 import { empresaService } from "@/lib/services/empresa.service";
+import { routes } from "@/lib/utils/routes";
 import { convidarMembroSchema } from "./schema";
 
 export async function convidarMembroAction(input: unknown) {
@@ -37,7 +38,7 @@ export async function convidarMembroAction(input: unknown) {
   });
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/membros");
+    revalidatePath(routes.empresa.membros);
   }
 
   return response.serialize();
@@ -78,7 +79,7 @@ export async function alterarPapelMembroAction(input: unknown) {
   );
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/membros");
+    revalidatePath(routes.empresa.membros);
   }
 
   return response.serialize();
@@ -112,7 +113,7 @@ export async function inativarMembroAction(input: unknown) {
   );
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/membros");
+    revalidatePath(routes.empresa.membros);
   }
 
   return response.serialize();
@@ -145,7 +146,7 @@ export async function revogarConviteAction(input: unknown) {
   );
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/membros");
+    revalidatePath(routes.empresa.membros);
   }
 
   return response.serialize();
@@ -179,7 +180,7 @@ export async function reenviarConviteAction(input: unknown) {
   );
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/membros");
+    revalidatePath(routes.empresa.membros);
   }
 
   return response.serialize();

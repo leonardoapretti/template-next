@@ -8,6 +8,7 @@ import { FormErrorMessage } from "@/components/form-error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { routes } from "@/lib/utils/routes";
 import { redefinirSenhaAction } from "./actions";
 import { type RedefinirSenhaFormSchema, redefinirSenhaSchema } from "./schema";
 
@@ -31,7 +32,7 @@ export function RedefinirSenhaForm({ token }: { token: string }) {
     }
 
     toast.success("Senha alterada. Faça login novamente.");
-    router.push(result.redirectTo ?? "/login");
+    router.push(result.redirectTo ?? routes.auth.login);
   }
 
   return (

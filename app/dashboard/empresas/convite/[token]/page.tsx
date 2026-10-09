@@ -1,9 +1,10 @@
 import { MailIcon } from "lucide-react";
 import type { Metadata } from "next";
-import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shell";
 import { auth } from "@/auth";
+import { PageHeader, PageSection, PageShell } from "@/components/pages/page-shell";
 import { empresaService } from "@/lib/services/empresa.service";
 import { userService } from "@/lib/services/user.service";
+import { routes } from "@/lib/utils/routes";
 import { AceitarConviteButton } from "./_components/aceitar-convite-button";
 import { IrParaAutenticacaoButton } from "./_components/ir-para-autenticacao-button";
 
@@ -89,14 +90,14 @@ async function ConviteRequerOutraConta({
   const contaResponse = await userService.recuperarPorEmail(conviteEmail);
   const contaExiste = contaResponse.isSuccess() && contaResponse.data !== null;
 
-  const urlConvite = `/dashboard/empresas/convite/${token}`;
+  const urlConvite = routes.dashboard.convite(token);
   const destino = contaExiste
-    ? `/login?retorno=${encodeURIComponent(urlConvite)}&email=${encodeURIComponent(conviteEmail)}`
+    ? `${routes.auth.login}?retorno=${encodeURIComponent(urlConvite)}&email=${encodeURIComponent(conviteEmail)}`
     : // convite=token: permite ao cadastro pular a confirmação de e-mail —
       // cadastrarAction revalida o token no servidor e confere que o e-mail
       // do formulário bate com o do convite antes de dispensar a
       // confirmação, nunca confia só nesse parâmetro de URL.
-      `/cadastro?retorno=${encodeURIComponent(urlConvite)}&email=${encodeURIComponent(conviteEmail)}&convite=${encodeURIComponent(token)}`;
+      `${routes.auth.cadastro}?retorno=${encodeURIComponent(urlConvite)}&email=${encodeURIComponent(conviteEmail)}&convite=${encodeURIComponent(token)}`;
 
   return (
     <div className="space-y-4">

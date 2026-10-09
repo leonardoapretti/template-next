@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertAdminAction, getAccessContext } from "@/lib/access-control";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
 import { planoService } from "@/lib/services/plano.service";
+import { routes } from "@/lib/utils/routes";
 
 const criarPlanoSchema = z.object({
   codigo: z
@@ -30,7 +31,7 @@ export async function criarPlanoAction(input: unknown) {
   const response = await planoService.criar(parsed.data.codigo, parsed.data.nome);
 
   if (response.isSuccess()) {
-    revalidatePath("/admin/planos");
+    revalidatePath(routes.admin.planos);
   }
 
   return response.serialize();
@@ -56,7 +57,7 @@ export async function salvarMatrizPlanoAction(input: unknown) {
   const response = await planoService.salvarMatriz(parsed.data.planoId, parsed.data.permissoes);
 
   if (response.isSuccess()) {
-    revalidatePath("/admin/planos");
+    revalidatePath(routes.admin.planos);
   }
 
   return response.serialize();

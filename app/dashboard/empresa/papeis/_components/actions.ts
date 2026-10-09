@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertCurrentUserCan } from "@/lib/access-control";
 import { DataBaseResponse } from "@/lib/services/config/database-response";
 import { roleService } from "@/lib/services/role.service";
+import { routes } from "@/lib/utils/routes";
 
 const criarPapelSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome do perfil."),
@@ -52,7 +53,7 @@ export async function criarPapelAction(input: unknown) {
   );
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/papeis");
+    revalidatePath(routes.empresa.papeis);
   }
 
   return response.serialize();
@@ -82,7 +83,7 @@ export async function atualizarPermissoesPapelAction(input: unknown) {
   const response = await roleService.atualizarPermissoes(parsed.data.id, permissoesLiberadas);
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/papeis");
+    revalidatePath(routes.empresa.papeis);
   }
 
   return response.serialize();
@@ -108,7 +109,7 @@ export async function renomearPapelAction(input: unknown) {
   const response = await roleService.renomear(parsed.data.id, parsed.data.nome);
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/papeis");
+    revalidatePath(routes.empresa.papeis);
   }
 
   return response.serialize();
@@ -131,7 +132,7 @@ export async function removerPapelAction(input: unknown) {
   const response = await roleService.removerPapel(parsed.data.id);
 
   if (response.isSuccess()) {
-    revalidatePath("/dashboard/empresa/papeis");
+    revalidatePath(routes.empresa.papeis);
   }
 
   return response.serialize();

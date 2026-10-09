@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { routes } from "@/lib/utils/routes";
 import { aceitarConviteAction } from "./actions";
 
 export function AceitarConviteButton({ token }: { token: string }) {
@@ -21,7 +22,7 @@ export function AceitarConviteButton({ token }: { token: string }) {
     }
 
     toast.success("Convite aceito.");
-    router.push("/dashboard/empresa");
+    router.push(routes.empresa.home);
   }
 
   return (
