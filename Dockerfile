@@ -34,7 +34,6 @@ COPY . .
 # deixar secrets nas camadas nem no histórico da imagem.
 RUN --mount=type=secret,id=env,target=/app/.env pnpm prisma generate
 RUN --mount=type=secret,id=env,target=/app/.env pnpm test
-RUN pnpm audit --prod
 RUN --mount=type=secret,id=env,target=/app/.env pnpm build
 
 

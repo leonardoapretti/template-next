@@ -11,8 +11,8 @@ Como o código sai do `git push` e chega na VPS, e como mantê-lo seguro. Segura
 
 ```
 push/PR em main ──► job quality (ubuntu-latest + Postgres 17 de serviço)
-                      install --frozen-lockfile → pnpm audit --prod → prisma generate
-                      → fumadocs-mdx → prisma migrate deploy → pnpm lint → tsc --noEmit → pnpm test
+                      install --frozen-lockfile → pnpm audit --prod → pnpm audit --audit-level=high → prisma generate
+                      → fumadocs-mdx → prisma migrate deploy → pnpm lint → tsc --noEmit → pnpm test → Trivy (informativo)
 push em main/dispatch ──► job deploy (needs: quality)
                       SSH → rsync --delete (sem .git/.env/node_modules/.next/generated)
                       → ssh bash scripts/deploy.sh (flock, compose build app, up -d app, prune)
@@ -21,7 +21,7 @@ push em main/dispatch ──► job deploy (needs: quality)
 | Peça | Papel |
 | --- | --- |
 | `.github/workflows/deploy.yml` | Pipeline acima. `permissions: contents: read`, actions fixadas por SHA, SSH com `StrictHostKeyChecking=yes` e `known_hosts` vindo do secret `VPS_KNOWN_HOSTS`. `concurrency: deploy-template-next`, `cancel-in-progress: false` (nunca cancela deploy no meio). PR roda só `quality`. |
-| `Dockerfile` | Multi-stage `base → deps → builder → runner`. No builder: `prisma generate`, `pnpm test`, `pnpm audit --prod`, `pnpm build`, com o `.env` montado como secret do BuildKit (sem `ARG`/`ENV`). Runner: usuário não-root `nextjs`, `node .next/standalone/server.js`. |
+| `Dockerfile` | Multi-stage `base → deps → builder → runner`. No builder: `prisma generate`, `pnpm test`, `pnpm audit --prod`, `pnpm build` (o audit roda só no CI), com o `.env` montado como secret do BuildKit (sem `ARG`/`ENV`). Runner: usuário não-root `nextjs`, `node .next/standalone/server.js`. |
 | `docker-compose.yml` + `docker-compose.prod.yml` | Base (dev local, com Postgres) + override de prod (sem porta publicada, redes externas `web` e `db`, Postgres compartilhado `shared-postgres`). `init: true`, log rotation, `restart: unless-stopped`, `healthcheck` do app (`/login`) e `secrets: env` para o build. |
 | `scripts/docker-entrypoint.sh` | `prisma migrate deploy` e depois `exec node server.js` (migration roda no boot do container). |
 | `scripts/deploy.sh` | `flock` (um deploy por vez), tag `:anterior` da imagem em produção, build, `up --wait` (espera o healthcheck), status, prune; se o container não ficar saudável, volta para `:anterior`; em erro imprime `ps` + logs. |
@@ -60,7 +60,7 @@ O gamehouse (`~/dev/gamehouse-org`) tem a mesma base e vai além; traga o que fi
 - **Deploy só de branch protegida** (`main`, e `hmg` quando existir), com proteção de branch: PR obrigatório, `quality` obrigatório, sem force-push. `workflow_dispatch` de deploy só para quem tem permissão de escrita; considere *environment* `production` com revisor obrigatório.
 - **SSH:** chave **dedicada ao deploy** (ed25519, só para este fim), usuário da VPS sem sudo, no grupo `docker`. Nada de `ssh-keyscan` no pipeline (confiança no primeiro uso, vulnerável a MITM): o host é verificado contra o secret `VPS_KNOWN_HOSTS` com `StrictHostKeyChecking=yes`. Se a VPS for reinstalada, atualize o secret. Remova a chave ao final (`if: always()`, já feito); restrinja a chave com `command=`/`from=` no `authorized_keys` se possível.
 - **rsync `--delete`** apaga na VPS o que não está no repo: mantenha as exclusões (`.env`, `node_modules`, `.next`, `generated`, volumes) e revise ao criar pasta persistente nova no diretório do projeto.
-- **Dependências:** `pnpm audit --prod` quebra o pipeline em vulnerabilidade conhecida (dois lugares: CI e Dockerfile). Corrija atualizando ou com `overrides` em `package.json` — nunca com `--ignore`/`audit-level` baixo para "passar". Habilite secret scanning/push protection no repositório. Scripts de build de dependências só com aprovação explícita (`allowBuilds` em `pnpm-workspace.yaml`).
+- **Dependências:** Duas camadas no CI: `pnpm audit --prod` (qualquer severidade) e `pnpm audit --audit-level=high` (inclui dev: tsx, vitest, eslint, shadcn rodam no runner com acesso aos secrets). Também roda toda segunda em `.github/workflows/auditoria-semanal.yml`. Corrija atualizando ou com `overrides` em `package.json` — nunca baixando o nível para "passar". Exceção só para advisory **sem patch**, de dependência de dev, com `pnpm.auditConfig.ignoreGhsas` e justificativa aqui: hoje `GHSA-vfj7-8cjw-p6xm` (`braces`, ReDoS em `eslint-config-next`; sem versão corrigida) — remova da lista quando houver patch. `minimumReleaseAge: 1440` no `pnpm-workspace.yaml` evita instalar pacote publicado há menos de 1 dia. O Trivy do CI (`misconfig,secret`, HIGH/CRITICAL) está informativo (`exit-code: "0"`): revise o primeiro relatório e promova a bloqueante. Habilite secret scanning/push protection no repositório. Scripts de build de dependências só com aprovação explícita (`allowBuilds` em `pnpm-workspace.yaml`).
 
 **Imagem e container**
 

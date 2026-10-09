@@ -7,3 +7,7 @@ allowBuilds:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# Não instala versão publicada há menos de 1 dia (reduz risco de pacote
+# malicioso recém-publicado). Em minutos.
+minimumReleaseAge: 1440
