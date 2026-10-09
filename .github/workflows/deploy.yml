@@ -78,16 +78,14 @@ jobs:
 
       - run: pnpm test
 
-      # Varredura de configuração (Dockerfile/compose/workflows) e segredos no repo.
-      # Informativa por enquanto (exit-code 0): promover a bloqueante depois de
-      # revisar o primeiro relatório.
+      # Varredura de configuração (Dockerfile) e segredos no repo; HIGH/CRITICAL bloqueia.
       - name: Trivy (config e segredos)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scanners: misconfig,secret
           severity: HIGH,CRITICAL
-          exit-code: "0"
+          exit-code: "1"
 
   deploy:
     name: Build e deploy na VPS
