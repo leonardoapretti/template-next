@@ -6,7 +6,7 @@ import { DetalhesSidebarMobile } from "./detalhes-sidebar-mobile";
 function PaginaDetalhes({ children }: { children: React.ReactNode }) {
   return (
     <div className={pageSurfaceClassName}>
-      <div className={cn(pageContainerClassName, "space-y-6 sm:space-y-8")}>{children}</div>
+      <div className={cn(pageContainerClassName, "space-y-4 sm:space-y-5")}>{children}</div>
     </div>
   );
 }
@@ -14,73 +14,72 @@ function PaginaDetalhes({ children }: { children: React.ReactNode }) {
 function DetalhesHeader({ children, ...props }: React.HTMLAttributes<HTMLElement>) {
   return (
     <header
-      className="relative flex flex-col gap-5 overflow-hidden rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur sm:rounded-3xl sm:p-6 lg:flex-row lg:items-center lg:justify-between"
+      className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-center lg:justify-between"
       {...props}
     >
-      <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary via-accent to-primary/40" />
       {children}
     </header>
   );
 }
 
 function DetalhesHeaderIdentidade({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-start gap-3 sm:items-center sm:gap-4">{children}</div>;
+  return <div className="flex items-start gap-3 sm:items-center">{children}</div>;
 }
 
 function DetalhesHeaderIcone({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border bg-primary/10 text-primary shadow-sm sm:size-12">
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-primary/10 text-primary-text sm:size-10">
       {children}
     </div>
   );
 }
 
 function DetalhesHeaderConteudo({ children }: { children: React.ReactNode }) {
-  return <div>{children}</div>;
+  return <div className="min-w-0">{children}</div>;
 }
 
 function DetalhesHeaderTitulo({ children }: { children: React.ReactNode }) {
-  return <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{children}</h1>;
+  return (
+    <h1 className="wrap-break-word text-lg font-semibold tracking-tight sm:text-xl">{children}</h1>
+  );
 }
 
 function DetalhesHeaderSubtitulo({ children }: { children: React.ReactNode }) {
-  return <div className="mt-1 flex flex-wrap items-center gap-2">{children}</div>;
+  return <div className="mt-0.5 flex flex-wrap items-center gap-1.5">{children}</div>;
 }
 
 function DetalhesHeaderStats({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-3 overflow-hidden rounded-xl border bg-muted/40 shadow-inner sm:rounded-2xl">
-      {children}
-    </div>
+    <div className="grid grid-cols-3 overflow-hidden rounded-md border bg-muted/30">{children}</div>
   );
 }
 
 function DetalhesHeaderStatsCelula({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-w-0 border-r px-2 py-2 text-center last:border-r-0 sm:px-5 sm:py-3">
+    <div className="min-w-0 border-r px-2.5 py-1.5 text-center last:border-r-0 sm:px-4 sm:py-2">
       {children}
     </div>
   );
 }
 
 function DetalhesHeaderStatsLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="truncate text-[10px] uppercase leading-tight text-muted-foreground sm:text-xs">
-      {children}
-    </p>
-  );
+  return <p className="truncate text-xs leading-tight text-muted-foreground">{children}</p>;
 }
 
 function DetalhesHeaderStatsValor({ children }: { children: React.ReactNode }) {
-  return <p className="mt-0.5 truncate text-sm font-bold sm:text-lg">{children}</p>;
+  return <p className="mt-0.5 truncate text-sm font-semibold sm:text-base">{children}</p>;
 }
 
 function DetalhesBody({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">{children}</div>;
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)] lg:gap-0">
+      {children}
+    </div>
+  );
 }
 
 function DetalhesMain({ children }: { children: React.ReactNode }) {
-  return <main className="space-y-6">{children}</main>;
+  return <main className="space-y-6 lg:pr-6">{children}</main>;
 }
 
 function DetalhesSidebar({ children }: { children: React.ReactNode }) {
@@ -97,11 +96,7 @@ function DetalhesSidebar({ children }: { children: React.ReactNode }) {
               ? "Ações"
               : "Detalhes";
 
-      return {
-        id: child.key ?? `${title}-${index}`,
-        title,
-        content: child,
-      };
+      return { id: child.key ?? `${title}-${index}`, title, content: child };
     });
 
   return <DetalhesSidebarMobile items={items} />;
@@ -117,15 +112,12 @@ function DetalhesSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border bg-card/90 p-5 shadow-sm backdrop-blur">
-      <div className="mb-5 flex items-center gap-2 border-b pb-3">
-        <span className="text-primary">{icon}</span>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h2>
+    <section>
+      <div className="flex items-center gap-2 border-b pb-2.5">
+        {icon && <span className="text-primary-text">{icon}</span>}
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
       </div>
-
-      {children}
+      <div className="pt-4">{children}</div>
     </section>
   );
 }
@@ -140,10 +132,9 @@ function DetalhesField({
   className?: string;
 }) {
   if (value === null || value === undefined || value === "") return null;
-
   return (
-    <div className={className ? `space-y-1 ${className}` : "space-y-1"}>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div className={className ? `space-y-0.5 ${className}` : "space-y-0.5"}>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="text-sm leading-relaxed text-foreground">{value}</p>
     </div>
   );
@@ -159,16 +150,12 @@ function DetalhesInfoCard({
   description?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border bg-background/60 p-4">
-      <div className="flex items-start gap-3">
+    <div className="rounded-md border bg-muted/20 p-3">
+      <div className="flex items-start gap-2.5">
         {badge}
-
-        <div className="min-w-0 flex-1 space-y-1">
-          {title && <p className="text-sm font-medium leading-none">{title}</p>}
-
-          {description && (
-            <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
-          )}
+        <div className="min-w-0 flex-1 space-y-0.5">
+          {title && <p className="text-sm font-medium leading-5">{title}</p>}
+          {description && <p className="text-sm leading-5 text-muted-foreground">{description}</p>}
         </div>
       </div>
     </div>
@@ -185,11 +172,10 @@ function DetalhesListGroup<T>({
   renderItem: (item: T, index: number) => React.ReactNode;
 }) {
   if (!items?.length) return null;
-
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <div className="grid gap-3 md:grid-cols-2">{items.map(renderItem)}</div>
+    <div className="space-y-2.5">
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <div className="grid gap-2.5 md:grid-cols-2">{items.map(renderItem)}</div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { AppBreadcrumb } from "@/components/app-breadcrumbs";
 import { BreadcrumbLabelsProvider } from "@/components/app-breadcrumbs/breadcrumb-labels-context";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { getAccessContext } from "@/lib/access-control";
@@ -81,6 +82,8 @@ export default async function SidebarLayout({
                 />
                 <AppBreadcrumb />
               </div>
+
+              <ThemeToggle variant="ghost" />
             </header>
 
             <main className="flex flex-1 flex-col bg-background pb-16 md:pb-0 [@media(display-mode:standalone)]:pb-[calc(4rem+env(safe-area-inset-bottom))] md:[@media(display-mode:standalone)]:pb-0">

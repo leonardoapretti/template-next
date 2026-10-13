@@ -334,3 +334,18 @@
   text-transform: uppercase;
   color: #171717;
 }
+
+/* Toaster (sonner): variáveis que antes iam em `style` inline. */
+.toaster {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --border-radius: var(--radius-sm);
+  --width: 26rem;
+}
+
+/* Scrollbar fina e discreta: trilho invisível, polegar arredondado. */
+@utility scrollbar-fina {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 25%, transparent) transparent;
+}

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ThemeToggle } from "../theme-toggle";
 import { SidebarHeader } from "../ui/sidebar";
 import type { SidebarLayoutEmpresaInfo, SidebarLayoutEmpresaOpcao } from "./layout";
 import { LogoEmpresa } from "./logo-header-sidebar";
@@ -21,18 +20,12 @@ export default function NavbarHeader({
 }: NavbarHeaderProps) {
   return (
     <SidebarHeader className="gap-4 group-data-[collapsible=icon]:px-1">
-      <div className="flex items-center justify-between">
-        <LogoEmpresa
-          empresaInfo={empresaInfo}
-          empresasDisponiveis={empresasDisponiveis}
-          isAdmin={isAdmin}
-          perfilAtual={perfilAtual}
-        />
-
-        <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-          <ThemeToggle />
-        </div>
-      </div>
+      <LogoEmpresa
+        empresaInfo={empresaInfo}
+        empresasDisponiveis={empresasDisponiveis}
+        isAdmin={isAdmin}
+        perfilAtual={perfilAtual}
+      />
 
       {children}
     </SidebarHeader>
