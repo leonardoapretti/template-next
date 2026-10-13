@@ -5,7 +5,7 @@ description: Use ao proteger uma action, rota, página ou botão com permissões
 
 # Controle de acesso (`lib/access-control`)
 
-Detalhes de uso e exemplos: `lib/fumadocs/content/docs/controle-de-acesso.mdx`.
+Detalhes de uso e exemplos: `lib/fumadocs/content/docs/controle-de-acesso.mdx`. Modelo multi-tenant (empresa ativa, `empresaId`, isolamento por service): skill `controle-de-acesso-multi-tenant`.
 
 ## Quem protege o quê
 
