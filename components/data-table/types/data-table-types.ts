@@ -1,4 +1,5 @@
 import type { ColumnSort, Row, RowData, Table as TanstackTable } from "@tanstack/react-table";
+import type { ResultadoExportacao } from "@/lib/utils/data-table-params";
 
 import type { DataTableConfig } from "../config/data-table-config";
 import type { FilterItemSchema } from "../config/parsers";
@@ -30,6 +31,10 @@ declare module "@tanstack/react-table" {
 
     advancedFilterKeys?: string[];
     enableExportButton: boolean;
+    // Tabela paginada no servidor: busca no servidor todas as linhas dos filtros da URL (até
+    // LIMITE_EXPORTACAO) — sem isto o CSV teria só a página atual.
+    exportar?: (busca: string) => Promise<ResultadoExportacao<TData>>;
+    exportFileName?: string;
   }
 }
 

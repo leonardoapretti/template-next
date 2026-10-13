@@ -80,7 +80,19 @@ export function DataTableFacetedFilter<TData, TValue>({
         render={
           <Button className="border-dashed" variant="outline">
             {selectedValues?.size > 0 ? (
-              <span className="rounded-sm opacity-70 transition-opacity">
+              <span
+                aria-label="Limpar filtro"
+                className="rounded-sm opacity-70 transition-opacity hover:opacity-100"
+                onClick={onReset}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  column?.setFilterValue(undefined);
+                }}
+                role="button"
+                tabIndex={-1}
+              >
                 <XCircle />
               </span>
             ) : (

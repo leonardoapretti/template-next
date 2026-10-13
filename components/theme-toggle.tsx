@@ -18,7 +18,9 @@ const themes = [
   { value: "system", label: "Sistema", icon: LaptopIcon },
 ] as const;
 
-export function ThemeToggle() {
+export function ThemeToggle({
+  variant = "outline",
+}: Readonly<{ variant?: React.ComponentProps<typeof Button>["variant"] }>) {
   const { theme, resolvedTheme, setTheme } = useTheme();
 
   const [mounted, setMounted] = React.useState(false);
@@ -28,7 +30,7 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <Button variant="outline" size="icon" disabled />;
+    return <Button variant={variant} size="icon" disabled />;
   }
 
   const isDark = resolvedTheme === "dark";
@@ -37,7 +39,7 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="icon" aria-label="Alternar tema">
+          <Button variant={variant} size="icon" aria-label="Alternar tema">
             {isDark ? <MoonIcon className="size-4" /> : <SunIcon className="size-4" />}
           </Button>
         }

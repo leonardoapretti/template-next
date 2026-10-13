@@ -24,6 +24,15 @@ export interface MultiStepFormProps<T extends FieldValues> {
 
   storageKey?: string;
 
+  // Modo edição: os dados já existem, então todas as etapas começam liberadas
+  // na navegação (sem precisar avançar uma a uma).
+  allStepsUnlocked?: boolean;
+
+  // Etapa (pelo `name`) em que o formulário abre — ex.: link direto pra etapa
+  // de fotos. Vale mais que a etapa de um rascunho salvo; nome desconhecido
+  // é ignorado.
+  initialStep?: string;
+
   steps?: StepDefinition[];
 
   orientation?: "horizontal" | "vertical";

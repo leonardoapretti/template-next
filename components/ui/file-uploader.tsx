@@ -162,14 +162,14 @@ function getDropzoneMessage({
 }) {
   if (isDragActive) {
     return {
-      icon: <UploadIcon className="size-6 animate-bounce text-primary" />,
+      icon: <UploadIcon className="size-6 animate-bounce text-primary-text" />,
       title: "Solte os arquivos para enviá-los",
     };
   }
 
   if (files.length > 0) {
     return {
-      icon: <FileText className="size-6 text-primary" />,
+      icon: <FileText className="size-6 text-primary-text" />,
       title: files.length === 1 ? "1 arquivo selecionado" : `${files.length} arquivos selecionados`,
       description: reachedLimit
         ? `Limite máximo de ${maxFileCount} arquivo${maxFileCount > 1 ? "s" : ""} atingido`
@@ -230,7 +230,7 @@ function DropzoneMessage({
   return (
     <div className="flex flex-col items-center justify-center gap-3 sm:px-5">
       <div className="rounded-full border border-dashed p-3">{icon}</div>
-      <p className="font-semibold text-primary">{title}</p>
+      <p className="font-semibold text-primary-text">{title}</p>
       {description && <p className="text-sm text-muted-foreground">{description}</p>}
     </div>
   );

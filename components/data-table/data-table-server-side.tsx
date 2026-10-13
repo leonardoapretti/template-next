@@ -104,13 +104,7 @@ export function DataTableServer<TData>({
   const canExpandRows = table.getCanSomeRowsExpand();
 
   return (
-    <div
-      className={cn(
-        "flex w-full flex-col gap-3 rounded-3xl border bg-card/90 p-3 shadow-sm backdrop-blur",
-        className,
-      )}
-      {...props}
-    >
+    <div className={cn("flex w-full flex-col gap-3", className)} {...props}>
       {children}
 
       {isMobile ? (
@@ -121,11 +115,11 @@ export function DataTableServer<TData>({
           table={table}
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border bg-background/45">
+        <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow className="bg-muted/35 hover:bg-muted/45" key={headerGroup.id}>
+                <TableRow className="bg-muted/40 hover:bg-muted/40" key={headerGroup.id}>
                   {canExpandRows && <TableHead className="w-7" />}
                   {headerGroup.headers.map((header) => (
                     <TableHead
@@ -202,7 +196,7 @@ export function DataTableServer<TData>({
                 <TableRow>
                   <TableCell className="h-44 text-center" colSpan={table.getAllColumns().length}>
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary-text">
                         <SearchX className="size-5" />
                       </div>
                       <p className="text-sm font-medium text-foreground">Nenhum resultado</p>
@@ -217,7 +211,7 @@ export function DataTableServer<TData>({
       )}
 
       <div className="flex flex-col gap-2.5">
-        <div className="rounded-2xl border bg-muted/25 px-3 py-2">
+        <div className="border-t pt-2.5">
           <DataTablePagination table={table} />
         </div>
         {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
@@ -248,8 +242,8 @@ function DataTableCardList<TData>({
 
   if (!rows.length) {
     return (
-      <div className="border-border flex flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/35 px-4 py-12 text-center text-sm text-muted-foreground">
-        <div className="mb-3 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/35 px-4 py-10 text-center text-sm text-muted-foreground">
+        <div className="mb-3 flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary-text">
           <SearchX className="size-5" />
         </div>
         <p className="font-medium text-foreground">Nenhum resultado</p>
@@ -341,7 +335,7 @@ function DataTableCard<TData>({
   return (
     <div
       className={cn(
-        "border-border rounded-2xl border bg-card/90 shadow-sm transition-colors",
+        "rounded-lg border bg-card transition-colors",
         row.getIsSelected() && "border-primary/50 bg-primary/5",
         isHighlighted && "animate-table-row-highlight",
       )}
@@ -370,12 +364,21 @@ function DataTableCard<TData>({
             onClick={handleNavigate}
             type="button"
           >
-            {summaryCells.map((cell, index) => (
-              <Fragment key={cell.id}>
-                {index > 0 && <span className="px-1 text-muted-foreground">-</span>}
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </Fragment>
-            ))}
+            {summaryCells.length > 1 ? (
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                {summaryCells.map((cell) => (
+                  <span className="font-normal" key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              summaryCells.map((cell) => (
+                <Fragment key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </Fragment>
+              ))
+            )}
           </button>
         </div>
 

@@ -59,7 +59,7 @@ function DialogContent({
         )}
         {...props}
       >
-        <ScrollArea className="max-h-[calc(100dvh-1rem)] min-h-0 w-full sm:max-h-[calc(100dvh-2rem)]">
+        <ScrollArea className="flex max-h-[calc(100dvh-1rem)] min-h-0 w-full flex-col sm:max-h-[calc(100dvh-2rem)]">
           <div className="grid gap-4 p-4">{children}</div>
         </ScrollArea>
 

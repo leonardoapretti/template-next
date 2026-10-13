@@ -7,15 +7,50 @@ import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+// Rascunho salvo no localStorage expira em 24h — evita reviver dados
+// velhos (ex.: preço de um produto que mudou, endereço desatualizado) que
+// o usuário nem lembra mais ter deixado pela metade.
+export const VALIDADE_MAXIMA_RASCUNHO_MS = 24 * 60 * 60 * 1000;
+
+export function rascunhoExpirado(savedAt: unknown, agora: number = Date.now()): boolean {
+  return typeof savedAt !== "number" || agora - savedAt > VALIDADE_MAXIMA_RASCUNHO_MS;
+}
+
+// Até qual etapa a navegação começa liberada: só a primeira num cadastro novo,
+// todas na edição (os dados já vêm do banco, então não há o que "completar"
+// antes de poder abrir qualquer etapa).
+export function etapaLiberadaInicialmente(totalEtapas: number, todasLiberadas: boolean): number {
+  return todasLiberadas ? Math.max(0, totalEtapas - 1) : 0;
+}
+
+// Índice da etapa em que abrir, ou undefined quando não foi pedida uma
+// (ou o nome não existe).
+export function indiceDaEtapaInicial(
+  stepNames: string[],
+  initialStep: string | undefined,
+): number | undefined {
+  const indice = initialStep === undefined ? -1 : stepNames.indexOf(initialStep);
+
+  return indice >= 0 ? indice : undefined;
+}
+
 export function useMultiStepForm<TFieldValues extends FieldValues>(
   schema: z.ZodType<TFieldValues>,
   form: UseFormReturn<TFieldValues>,
   stepNames: string[],
   storageKey?: string,
+  allStepsUnlocked = false,
+  initialStep?: string,
 ) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const liberadaInicialmente = etapaLiberadaInicialmente(stepNames.length, allStepsUnlocked);
 
-  const [highestCompletedStep, setHighestCompletedStep] = useState(0);
+  const initialStepIndex = indiceDaEtapaInicial(stepNames, initialStep);
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(initialStepIndex ?? 0);
+
+  const [highestCompletedStep, setHighestCompletedStep] = useState(
+    Math.max(liberadaInicialmente, initialStepIndex ?? 0),
+  );
 
   const [direction, setDirection] = useState<"forward" | "backward" | undefined>();
 
@@ -40,14 +75,22 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
     try {
       const parsed = JSON.parse(saved);
 
+      if (rascunhoExpirado(parsed.savedAt)) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
+
       form.reset(parsed.values);
-      setCurrentStepIndex(parsed.stepIndex ?? 0);
-      setHighestCompletedStep(parsed.stepIndex ?? 0);
+      // Etapa pedida explicitamente (link direto) vence a do rascunho.
+      const etapa = initialStepIndex ?? parsed.stepIndex ?? 0;
+
+      setCurrentStepIndex(etapa);
+      setHighestCompletedStep(Math.max(liberadaInicialmente, etapa));
       setHasSavedData(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao recuperar formulário salvo");
     }
-  }, [storageKey, form]);
+  }, [storageKey, form, liberadaInicialmente, initialStepIndex]);
 
   // -----------------------------
   // SAVE TO STORAGE
@@ -66,6 +109,7 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
         JSON.stringify({
           values,
           stepIndex: currentStepIndex,
+          savedAt: Date.now(),
         }),
       );
 
@@ -81,8 +125,17 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
   const clearStorage = useCallback(() => {
     if (!storageKey) return;
 
+    // Mesma guarda de resetForm: suprime o watch de salvamento por um
+    // tick, pra ele não re-escrever a chave que acabou de ser removida
+    // (ex.: se algo ainda mexer nos valores do form logo depois do clear).
+    isResettingRef.current = true;
+
     localStorage.removeItem(storageKey);
     setHasSavedData(false);
+
+    setTimeout(() => {
+      isResettingRef.current = false;
+    }, 0);
   }, [storageKey]);
 
   // -----------------------------
@@ -258,14 +311,14 @@ export function useMultiStepForm<TFieldValues extends FieldValues>(
 
     // 4. Reseta o estado de navegação
     setCurrentStepIndex(0);
-    setHighestCompletedStep(0);
+    setHighestCompletedStep(liberadaInicialmente);
     setDirection(undefined);
 
     // 5. Libera a flag no próximo tick, após o watch ter processado o reset
     setTimeout(() => {
       isResettingRef.current = false;
     }, 0);
-  }, [form, clearStorage]);
+  }, [form, clearStorage, liberadaInicialmente]);
 
   // -----------------------------
   // RETURN

@@ -96,7 +96,7 @@ function DialogDrawerContent({
 
     return (
       <DrawerContent className={cn("max-h-[calc(100svh-1rem)]", className)} {...drawerProps}>
-        <ScrollArea className="min-h-0 flex-1">
+        <ScrollArea className="flex min-h-0 flex-1 flex-col">
           <div className="grid gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
             {children}
           </div>
@@ -212,7 +212,7 @@ function AlertDialogDrawerContent({
 
     return (
       <DrawerContent className={cn("max-h-[calc(100svh-1rem)]", className)} {...drawerProps}>
-        <ScrollArea className="min-h-0 flex-1">
+        <ScrollArea className="flex min-h-0 flex-1 flex-col">
           <div className="grid gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
             {children}
           </div>

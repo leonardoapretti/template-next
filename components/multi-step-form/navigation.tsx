@@ -46,7 +46,9 @@ export function Navigation({
           aria-expanded={isExpanded}
         >
           <div className="text-left">
-            <p className="text-sm font-medium text-primary leading-none">{currentStep?.label}</p>
+            <p className="text-sm font-medium text-primary-text leading-none">
+              {currentStep?.label}
+            </p>
             <p className="text-muted-foreground mt-1 text-xs leading-none">
               Etapa {currentStepIndex + 1} de {total}
             </p>
@@ -92,7 +94,7 @@ export function Navigation({
                       "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium",
                       {
                         "border-primary bg-primary text-primary-foreground": isActive,
-                        "border-primary bg-primary/10 text-primary": isCompleted,
+                        "border-primary bg-primary/10 text-primary-text": isCompleted,
                         "border-border bg-background text-muted-foreground":
                           !isActive && !isCompleted,
                       },
@@ -104,7 +106,7 @@ export function Navigation({
                   <div>
                     <p
                       className={cn("text-sm font-medium leading-none", {
-                        "text-primary": isActive || isCompleted,
+                        "text-primary-text": isActive || isCompleted,
                         "text-muted-foreground": !isActive && !isCompleted,
                       })}
                     >
@@ -124,12 +126,12 @@ export function Navigation({
     );
   }
 
-  // Desktop / vertical — sem alterações
+  // Desktop / vertical — alinhado à direita, mais próximo do form
   return (
     <div
       className={cn("flex", {
         "items-center gap-2": orientation === "horizontal",
-        "w-full flex-1 flex-col": orientation === "vertical",
+        "w-full flex-1 flex-col items-end": orientation === "vertical",
       })}
     >
       {schemaSteps.map((step) => {
@@ -142,7 +144,7 @@ export function Navigation({
             key={step.index}
             className={cn("relative flex", {
               "flex-1 flex-col items-center": orientation === "horizontal",
-              "w-full items-start": orientation === "vertical",
+              "w-full items-start justify-end": orientation === "vertical",
             })}
           >
             <button
@@ -152,7 +154,7 @@ export function Navigation({
                 {
                   "flex w-full cursor-pointer flex-col items-center gap-2 rounded hover:bg-muted/50":
                     orientation === "horizontal",
-                  "flex w-full items-start rounded pb-8 text-left last:pb-0":
+                  "flex w-full items-start justify-end rounded pb-12 text-right last:pb-0":
                     orientation === "vertical",
                 },
               )}
@@ -160,31 +162,15 @@ export function Navigation({
               onClick={() => goToStep(step.index, step.index < currentStepIndex)}
               type="button"
             >
-              {orientation === "vertical" && (
-                <div
-                  className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-full border text-xs font-medium",
-                    {
-                      "border-primary bg-primary text-primary-foreground": isActive,
-                      "border-primary bg-primary/10 text-primary": isCompleted,
-                      "border-border bg-background text-muted-foreground":
-                        !isActive && !isCompleted,
-                    },
-                  )}
-                >
-                  {step.index + 1}
-                </div>
-              )}
-
               <div
                 className={cn({
                   "space-y-0.5 text-center": orientation === "horizontal",
-                  "mt-0.5 px-2 text-left": orientation === "vertical",
+                  "mt-0.5 px-2 text-right": orientation === "vertical",
                 })}
               >
                 <p
                   className={cn("text-sm font-medium", {
-                    "text-primary": isActive || isCompleted,
+                    "text-primary-text": isActive || isCompleted,
                     "text-muted-foreground": !isActive && !isCompleted,
                   })}
                 >
@@ -204,10 +190,26 @@ export function Navigation({
                   })}
                 />
               )}
+
+              {orientation === "vertical" && (
+                <div
+                  className={cn(
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium",
+                    {
+                      "border-primary bg-primary text-primary-foreground": isActive,
+                      "border-primary bg-primary/10 text-primary-text": isCompleted,
+                      "border-border bg-background text-muted-foreground":
+                        !isActive && !isCompleted,
+                    },
+                  )}
+                >
+                  {step.index + 1}
+                </div>
+              )}
             </button>
 
             {orientation === "vertical" && step.index < schemaSteps.length - 1 && (
-              <div className="bg-border absolute top-8 left-3 h-[calc(100%-1rem)] w-px" />
+              <div className="bg-border absolute top-8 right-3 h-[calc(100%-1rem)] w-px" />
             )}
           </div>
         );

@@ -14,6 +14,21 @@ import { cn } from "@/lib/utils";
 // partir dos `SelectItem` já renderizados como children — cobre o padrão
 // usado em todo o app (`<SelectItem value={id}>{label}</SelectItem>`) sem
 // mudar nenhum call site.
+// `{n}x de {valor}` vira um array de strings/números nos children, não uma
+// string única; junta para o label do trigger ficar igual ao da opção.
+function textoDoItem(children: React.ReactNode): string | null {
+  const partes = React.Children.toArray(children);
+
+  if (
+    partes.length === 0 ||
+    !partes.every((parte) => typeof parte === "string" || typeof parte === "number")
+  ) {
+    return null;
+  }
+
+  return partes.join("");
+}
+
 function coletarItensDoSelect(node: React.ReactNode, itens: Record<string, React.ReactNode>) {
   React.Children.forEach(node, (child) => {
     if (!React.isValidElement(child)) {
@@ -23,8 +38,10 @@ function coletarItensDoSelect(node: React.ReactNode, itens: Record<string, React
     if (child.type === SelectItem) {
       const props = child.props as { value?: unknown; children?: React.ReactNode };
 
-      if (props.value !== undefined && props.value !== null && typeof props.children === "string") {
-        itens[String(props.value)] = props.children;
+      const label = textoDoItem(props.children);
+
+      if (props.value !== undefined && props.value !== null && label !== null) {
+        itens[String(props.value)] = label;
       }
 
       return;

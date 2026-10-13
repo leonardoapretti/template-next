@@ -39,9 +39,13 @@ export function DataTableGlobalFilter<TData>({
     table.options.onGlobalFilterChange?.(e.target.value);
   };
 
+  // Acompanha o estado da tabela: limpar pelo botão "Limpar filtros" ou pelo
+  // chip da busca também esvazia o campo.
+  const globalFilter = table.getState().globalFilter as string | undefined;
+
   useEffect(() => {
-    setInputValue(table.getState().globalFilter ?? "");
-  }, [table]);
+    setInputValue(globalFilter ?? "");
+  }, [globalFilter]);
 
   const onReset = useCallback(() => {
     setInputValue("");

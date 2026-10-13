@@ -1,7 +1,7 @@
 "use client";
 
 import type { Column, Table } from "@tanstack/react-table";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { type ComponentProps, type ReactNode, useCallback, useMemo, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { DataTableActiveFilters } from "./data-table-active-filters";
 import { DataTableDateFilter } from "./data-table-date-filter";
 import { DataTableExportButton } from "./data-table-export-button";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
@@ -49,11 +50,9 @@ interface DataTableToolbarLayoutProps<TData> extends ComponentProps<"div"> {
   enableExportButton: boolean;
   enableGlobalFilter: boolean;
   filtersOpen?: boolean;
-  hasAnyFilter: boolean;
   primaryAction?: ReactNode;
   renderFilters?: () => ReactNode;
   activeFilterCount?: number;
-  onResetFilters: () => void;
   onToggleFilters?: () => void;
 }
 
@@ -65,18 +64,16 @@ function DataTableToolbarMobile<TData>({
   enableExportButton,
   enableGlobalFilter,
   filtersOpen = false,
-  hasAnyFilter,
   primaryAction,
   renderFilters,
   activeFilterCount = 0,
-  onResetFilters,
   onToggleFilters,
   ...props
 }: DataTableToolbarLayoutProps<TData>) {
   return (
     <div
       aria-orientation="horizontal"
-      className={cn("flex w-full flex-col gap-3 rounded-2xl border bg-muted/30 p-3", className)}
+      className={cn("flex w-full flex-col gap-3", className)}
       role="toolbar"
       {...props}
     >
@@ -100,7 +97,7 @@ function DataTableToolbarMobile<TData>({
         >
           <SlidersHorizontal className="h-4 w-4" />
           {activeFilterCount > 0 && (
-            <Badge className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full p-0 text-[10px]">
+            <Badge className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
               {activeFilterCount}
             </Badge>
           )}
@@ -110,7 +107,7 @@ function DataTableToolbarMobile<TData>({
       {primaryAction && <div className="*:w-full">{primaryAction}</div>}
 
       {filtersOpen && (
-        <div className="border-border flex flex-col gap-3 rounded-2xl border bg-card/80 p-3 shadow-sm">
+        <div className="flex flex-col gap-3 border-t pt-3">
           {(columns.length > 0 || renderFilters) && (
             <div className="flex flex-wrap gap-2">
               {columns.map((column) => (
@@ -126,19 +123,6 @@ function DataTableToolbarMobile<TData>({
               {enableExportButton && <DataTableExportButton table={table} />}
               <DataTableViewOptions table={table} />
             </div>
-
-            {hasAnyFilter && (
-              <Button
-                aria-label="Reset filters"
-                className="border-dashed"
-                onClick={onResetFilters}
-                size="sm"
-                variant="outline"
-              >
-                <X className="mr-1 h-3.5 w-3.5" />
-                Limpar filtros
-              </Button>
-            )}
           </div>
         </div>
       )}
@@ -153,19 +137,14 @@ function DataTableToolbarDesktop<TData>({
   className,
   enableExportButton,
   enableGlobalFilter,
-  hasAnyFilter,
   primaryAction,
   renderFilters,
-  onResetFilters,
   ...props
 }: DataTableToolbarLayoutProps<TData>) {
   return (
     <div
       aria-orientation="horizontal"
-      className={cn(
-        "flex w-full items-start justify-between gap-3 rounded-2xl border bg-muted/30 p-3",
-        className,
-      )}
+      className={cn("flex w-full items-start justify-between gap-3", className)}
       role="toolbar"
       {...props}
     >
@@ -175,18 +154,6 @@ function DataTableToolbarDesktop<TData>({
           <DataTableToolbarFilter column={column} key={column.id} />
         ))}
         {renderFilters?.()}
-        {hasAnyFilter && (
-          <Button
-            aria-label="Reset filters"
-            className="border-dashed"
-            onClick={onResetFilters}
-            size="sm"
-            variant="outline"
-          >
-            <X />
-            Limpar
-          </Button>
-        )}
       </div>
       <div className="flex items-center gap-2">
         {children}
@@ -207,8 +174,6 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const isFiltered = table.getState().columnFilters.length > 0;
 
   const columns = useMemo(
     () => table.getAllColumns().filter((column) => column.getCanFilter()),
@@ -235,14 +200,13 @@ export function DataTableToolbar<TData>({
     if (advancedFilterKeys.length > 0) {
       const resetValues: Record<string, null> = {};
       for (const key of advancedFilterKeys) resetValues[key] = null;
-      setAdvancedFilters(resetValues);
+      void setAdvancedFilters(resetValues);
     }
   }, [table, advancedFilterKeys, setAdvancedFilters]);
 
   const enableExportButton = table.options.meta?.enableExportButton ?? true;
   const enableGlobalFilter = table.options.enableGlobalFilter ?? false;
   const renderFilters = table.options.meta?.renderFilters;
-  const hasAnyFilter = isFiltered || hasAdvancedFilters;
 
   const activeAdvancedFilterCount = getActiveAdvancedFilterCount(
     advancedFilterKeys,
@@ -250,36 +214,28 @@ export function DataTableToolbar<TData>({
   );
   const activeFilterCount = table.getState().columnFilters.length + activeAdvancedFilterCount;
 
-  if (isMobile) {
-    return (
-      <DataTableToolbarMobile
-        activeFilterCount={activeFilterCount}
-        className={className}
-        columns={columns}
-        enableExportButton={enableExportButton}
-        enableGlobalFilter={enableGlobalFilter}
-        filtersOpen={filtersOpen}
-        hasAnyFilter={hasAnyFilter}
-        onResetFilters={onReset}
-        onToggleFilters={() => setFiltersOpen((prev) => !prev)}
-        primaryAction={primaryAction}
-        renderFilters={renderFilters}
-        table={table}
-        {...props}
-      >
-        {children}
-      </DataTableToolbarMobile>
-    );
-  }
-
-  return (
+  const barra = isMobile ? (
+    <DataTableToolbarMobile
+      activeFilterCount={activeFilterCount}
+      className={className}
+      columns={columns}
+      enableExportButton={enableExportButton}
+      enableGlobalFilter={enableGlobalFilter}
+      filtersOpen={filtersOpen}
+      onToggleFilters={() => setFiltersOpen((prev) => !prev)}
+      primaryAction={primaryAction}
+      renderFilters={renderFilters}
+      table={table}
+      {...props}
+    >
+      {children}
+    </DataTableToolbarMobile>
+  ) : (
     <DataTableToolbarDesktop
       className={className}
       columns={columns}
       enableExportButton={enableExportButton}
       enableGlobalFilter={enableGlobalFilter}
-      hasAnyFilter={hasAnyFilter}
-      onResetFilters={onReset}
       primaryAction={primaryAction}
       renderFilters={renderFilters}
       table={table}
@@ -287,6 +243,13 @@ export function DataTableToolbar<TData>({
     >
       {children}
     </DataTableToolbarDesktop>
+  );
+
+  return (
+    <div className="flex w-full flex-col gap-3">
+      {barra}
+      <DataTableActiveFilters extraActive={hasAdvancedFilters} onReset={onReset} table={table} />
+    </div>
   );
 }
 

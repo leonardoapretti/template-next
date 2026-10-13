@@ -78,7 +78,7 @@ export function AsyncCombobox<T>({
     let active = true;
     setIsLoading(true);
 
-    fetchFn(debouncedQuery)
+    void fetchFn(debouncedQuery)
       .then((results) => {
         if (active) setOptions(results);
       })

@@ -7,6 +7,10 @@ import { createContext, useContext } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 export interface MultiStepFormContextValue {
+  // O contexto não é genérico (React Context não suporta isso), e o schema do form varia por
+  // consumidor do MultiStepForm — `FieldValues` sozinho não compila aqui porque alguns métodos de
+  // UseFormReturn (ex.: watch) são contravariantes no tipo do form.
+  // biome-ignore lint/suspicious/noExplicitAny: ver comentário acima
   form: UseFormReturn<any>;
 
   currentStep: string;

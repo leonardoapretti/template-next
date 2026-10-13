@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type DatePickerFieldProps = {
+  id?: string;
   value?: string; // yyyy-MM-dd
   onChange: (value: string) => void;
   placeholder?: string;
@@ -55,6 +56,7 @@ function formatInputDate(date?: Date) {
 }
 
 export function DatePickerField({
+  id,
   value,
   onChange,
   placeholder = "dd/mm/aaaa",
@@ -70,7 +72,9 @@ export function DatePickerField({
 
   useEffect(() => {
     if (!value) {
-      setInputValue("");
+      // Só limpa se o campo mostrava uma data completa (reset vindo de fora);
+      // uma data incompleta é o usuário ainda digitando.
+      setInputValue((atual) => (atual.length === 10 ? "" : atual));
       return;
     }
 
@@ -114,6 +118,7 @@ export function DatePickerField({
   return (
     <div className="relative flex w-full items-center">
       <Input
+        id={id}
         ref={inputRef}
         value={inputValue}
         onChange={handleInputChange}

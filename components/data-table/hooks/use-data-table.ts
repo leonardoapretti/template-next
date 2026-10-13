@@ -32,6 +32,7 @@ import {
   useQueryStates,
 } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
+import type { ResultadoExportacao } from "@/lib/utils/data-table-params";
 import { getSortingStateParser } from "../config/parsers";
 import type { ExtendedColumnSort } from "../types/data-table-types";
 import { useDebouncedCallback } from "./use-debounced-callback";
@@ -90,6 +91,10 @@ interface UseDataTableProps<TData>
   staleTime?: number;
   //Habilitar botão exportar
   enableExportButton?: boolean;
+  // Obrigatório em tabela paginada no servidor (manualPagination) com exportação — ver TableMeta.
+  exportar?: (busca: string) => Promise<ResultadoExportacao<TData>>;
+  // Nome do arquivo CSV, sem extensão.
+  exportFileName?: string;
   // Informa se o usuário pode editar o projeto em questão
 }
 
@@ -123,6 +128,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     filterParser = parseAsString.withDefault(""),
     staleTime = 5 * 60 * 1000,
     enableExportButton = true,
+    exportar,
+    exportFileName,
     ...tableProps
   } = props;
 
@@ -198,10 +205,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       const newPagination =
         typeof updaterOrValue === "function" ? updaterOrValue(pagination) : updaterOrValue;
       if (page !== newPagination.pageIndex + 1) {
-        setPage(newPagination.pageIndex + 1);
+        void setPage(newPagination.pageIndex + 1);
       }
       if (perPage !== newPagination.pageSize) {
-        setPerPage(newPagination.pageSize);
+        void setPerPage(newPagination.pageSize);
       }
     },
     [pagination, setPage, setPerPage, page, perPage],
@@ -226,7 +233,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
           ? updaterOrValue(sorting as SortingState)
           : updaterOrValue;
       if (JSON.stringify(sorting) !== JSON.stringify(newSorting)) {
-        setSorting(newSorting as ExtendedColumnSort<TData>[]);
+        void setSorting(newSorting as ExtendedColumnSort<TData>[]);
       }
     },
     [sorting, setSorting],
@@ -268,8 +275,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const [filterValues, setFilterValues] = useQueryStates(filterParsers);
 
   const debouncedSetFilterValues = useDebouncedCallback((values: typeof filterValues) => {
-    setPage(1);
-    setFilterValues(values);
+    void setPage(1);
+    void setFilterValues(values);
   }, debounceMs + 100);
 
   const initialColumnFilters: ColumnFiltersState = useMemo(() => {
@@ -328,8 +335,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   );
 
   const debouncedSetGlobalFilter = useDebouncedCallback((value: string) => {
-    setPage(1);
-    setGlobalFilter(value || null);
+    void setPage(1);
+    void setGlobalFilter(value || null);
   }, debounceMs);
 
   const onGlobalFilterChange = useCallback(
@@ -403,7 +410,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       mobileSummaryColumnIds,
       renderFilters,
       advancedFilterKeys,
-      enableExportButton,
+      // Paginada no servidor sem `exportar`: o CSV sairia só com a página atual — sem botão.
+      enableExportButton: enableExportButton && (!manualPagination || !!exportar),
+      exportar,
+      exportFileName,
     },
   });
 

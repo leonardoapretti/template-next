@@ -4,8 +4,10 @@ import { Plus, Trash2 } from "lucide-react";
 import {
   type ArrayPath,
   type Control,
+  type FieldArray,
   type FieldArrayWithId,
   type FieldValues,
+  type UseFieldArrayAppend,
   useFieldArray,
 } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -17,13 +19,19 @@ interface DynamicFieldArrayProps<T extends FieldValues> {
   label: string;
   addButtonLabel?: string;
 
-  emptyItem: any;
+  emptyItem: FieldArray<T, ArrayPath<T>>;
 
   children: (index: number, field: FieldArrayWithId<T, ArrayPath<T>, "id">) => React.ReactNode;
 
-  onAdd?: (append: (value: any) => void, emptyItem: any) => void;
+  onAdd?: (
+    append: UseFieldArrayAppend<T, ArrayPath<T>>,
+    emptyItem: FieldArray<T, ArrayPath<T>>,
+  ) => void;
 
-  renderAddButton?: (args: { append: (value: any) => void; emptyItem: any }) => React.ReactNode;
+  renderAddButton?: (args: {
+    append: UseFieldArrayAppend<T, ArrayPath<T>>;
+    emptyItem: FieldArray<T, ArrayPath<T>>;
+  }) => React.ReactNode;
   nomeRegistro?: string;
 }
 

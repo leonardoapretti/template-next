@@ -33,6 +33,8 @@ export function MultiStepForm<T extends FieldValues>({
   children,
   className,
   storageKey,
+  allStepsUnlocked,
+  initialStep,
   steps: externalSteps,
   orientation = "horizontal",
 }: React.PropsWithChildren<MultiStepFormProps<T>>) {
@@ -73,7 +75,14 @@ export function MultiStepForm<T extends FieldValues>({
 
   const stepNames = steps.map((step) => step.props.name);
 
-  const multiStepForm = useMultiStepForm(schema, form, stepNames, storageKey);
+  const multiStepForm = useMultiStepForm(
+    schema,
+    form,
+    stepNames,
+    storageKey,
+    allStepsUnlocked,
+    initialStep,
+  );
 
   const { formState } = form;
   const { clearStorage } = multiStepForm;
@@ -83,6 +92,15 @@ export function MultiStepForm<T extends FieldValues>({
       clearStorage();
     }
   }, [formState.isSubmitSuccessful, clearStorage]);
+
+  // `onSubmit` pode lançar de propósito pra sinalizar falha de negócio ao
+  // react-hook-form (isSubmitSuccessful só vira false assim — ver
+  // convenção em novo-cliente-form.tsx). O form já mostrou o erro (toast)
+  // antes de lançar, então aqui só evita a rejeição não tratada.
+  const submitForm = form.handleSubmit(onSubmit);
+  const handleSubmit = (event?: React.SyntheticEvent) => {
+    submitForm(event)?.catch(() => {});
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
     if (event.key !== "Enter") return;
@@ -100,11 +118,11 @@ export function MultiStepForm<T extends FieldValues>({
     event.preventDefault();
 
     if (multiStepForm.isLastStep) {
-      form.handleSubmit(onSubmit)();
+      handleSubmit();
       return;
     }
 
-    multiStepForm.nextStep(event);
+    void multiStepForm.nextStep(event);
   };
 
   const schemaSteps = useMemo(() => {
@@ -131,22 +149,30 @@ export function MultiStepForm<T extends FieldValues>({
       <MultiStepFormContext.Provider value={multiStepForm}>
         <div
           className={cn(
-            "col-span-full grid h-full",
+            "col-span-full grid h-full overflow-hidden rounded-lg border",
             isMobile ? "grid-cols-1" : "grid-cols-3",
             className,
           )}
         >
-          {/* Painel de navegação lateral — ocupa linha própria no mobile */}
+          {/* Painel de navegação lateral — ocupa linha própria no mobile; no
+              desktop fica fixo perto do topo enquanto só o formulário rola.
+              Não usa o truque `top-1/2 -translate-y-1/2` (centralizar
+              verticalmente dentro da grid row) porque o % de `top` num
+              elemento sticky resolve contra o container de scroll, não
+              contra a altura da própria row — numa etapa com pouco
+              conteúdo (row baixa) isso empurra a navegação pra fora do
+              card, por cima ou por baixo, dependendo da altura da página.
+              `top-8` é previsível em qualquer altura de conteúdo. */}
           <div
             className={cn(
-              "flex flex-col border-border/80 bg-muted/30",
+              "flex flex-col bg-muted/30",
               isMobile
-                ? "col-span-1 rounded-t-3xl border-b p-4 pb-0"
-                : "col-span-1 rounded-l-3xl border-r p-8",
+                ? "col-span-1 border-b p-4 pb-0"
+                : "sticky top-8 col-span-1 max-h-screen self-start overflow-y-auto border-r p-6",
             )}
           >
             {navigationHeader && (
-              <div className={cn(isMobile ? "mb-4" : "mb-8")}>{navigationHeader}</div>
+              <div className={cn(isMobile ? "mb-4" : "mb-6")}>{navigationHeader}</div>
             )}
 
             <div className={cn("flex-1", isMobile ? "" : "p-2")}>
@@ -165,8 +191,8 @@ export function MultiStepForm<T extends FieldValues>({
             className={cn(
               "flex flex-col",
               isMobile
-                ? "col-span-1 space-y-6 bg-card/90 p-4"
-                : "col-span-2 space-y-12 bg-card/90 p-10 pb-0 lg:p-14",
+                ? "col-span-1 space-y-6 bg-card p-4"
+                : "col-span-2 space-y-8 bg-card p-6 pb-0 lg:p-8",
             )}
           >
             {mainContentHeader && <div>{mainContentHeader}</div>}
@@ -174,7 +200,7 @@ export function MultiStepForm<T extends FieldValues>({
             <form
               className="flex flex-1 flex-col justify-between"
               onKeyDown={handleKeyDown}
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={handleSubmit}
             >
               <main className="relative flex-1 transition-transform duration-500">
                 {steps.map((step, index) => {
@@ -206,12 +232,9 @@ export function MultiStepForm<T extends FieldValues>({
   return (
     <MultiStepFormContext.Provider value={multiStepForm}>
       <form
-        className={cn(
-          "flex size-full flex-col overflow-hidden rounded-3xl border bg-card/90 p-4 shadow-sm backdrop-blur sm:p-6",
-          className,
-        )}
+        className={cn("flex size-full flex-col rounded-lg border bg-card p-4 sm:p-6", className)}
         onKeyDown={handleKeyDown}
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={handleSubmit}
       >
         <aside className="mb-6 flex w-full flex-col justify-center">
           {navigationHeader && <div className="mb-6">{navigationHeader}</div>}
@@ -225,10 +248,14 @@ export function MultiStepForm<T extends FieldValues>({
           />
         </aside>
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-x-hidden">
           {mainContentHeader && <div className="mb-6">{mainContentHeader}</div>}
 
-          <main className="relative flex-1 transition-transform duration-500">
+          {/* px-1: dá espaço pro ring de foco/erro dos inputs da etapa ativa
+              não ser cortado por este overflow-x-hidden — ele existe pra
+              esconder as etapas inativas deslizando fora da tela (ver
+              AnimatedStep), não pra decoração, então não pode ser removido. */}
+          <main className="relative flex-1 px-1 transition-transform duration-500">
             {steps.map((step, index) => {
               const isActive = index === multiStepForm.currentStepIndex;
 

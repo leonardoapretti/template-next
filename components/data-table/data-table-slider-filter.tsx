@@ -116,9 +116,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
 
   const onReset = useCallback(
     (event: MouseEvent) => {
-      if (event.target instanceof HTMLDivElement) {
-        event.stopPropagation();
-      }
+      event.stopPropagation();
       column.setFilterValue(undefined);
     },
     [column],
@@ -130,7 +128,19 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
         render={
           <Button className="border-dashed" size="sm" variant="outline">
             {columnFilterValue ? (
-              <span className="rounded-sm opacity-70 transition-opacity">
+              <span
+                aria-label="Limpar filtro"
+                className="rounded-sm opacity-70 transition-opacity hover:opacity-100"
+                onClick={onReset}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  column.setFilterValue(undefined);
+                }}
+                role="button"
+                tabIndex={-1}
+              >
                 <XCircle />
               </span>
             ) : (

@@ -134,7 +134,7 @@ export function DataTableDateFilter<TData>({
       }
 
       const hasSelectedDates = selectedDates.from || selectedDates.to;
-      const dateText = hasSelectedDates ? formatDateRange(selectedDates) : "Select date range";
+      const dateText = hasSelectedDates ? formatDateRange(selectedDates) : "Selecionar período";
 
       return (
         <span className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export function DataTableDateFilter<TData>({
     }
 
     const hasSelectedDate = selectedDates.length > 0;
-    const dateText = hasSelectedDate ? formatarDataBr(selectedDates[0]) : "Select date";
+    const dateText = hasSelectedDate ? formatarDataBr(selectedDates[0]) : "Selecionar data";
 
     return (
       <span className="flex items-center gap-2">
@@ -178,7 +178,19 @@ export function DataTableDateFilter<TData>({
         render={
           <Button className="border-dashed" size="sm" variant="outline">
             {hasValue ? (
-              <span className="rounded-sm opacity-70 transition-opacity">
+              <span
+                aria-label="Limpar filtro"
+                className="rounded-sm opacity-70 transition-opacity hover:opacity-100"
+                onClick={onReset}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  column.setFilterValue(undefined);
+                }}
+                role="button"
+                tabIndex={-1}
+              >
                 <XCircle />
               </span>
             ) : (
